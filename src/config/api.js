@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (import.meta.env.MODE === 'development') {
+    return 'http://localhost:3000';
+  }
+  return 'https://quiz-be-rouge.vercel.app';
+};
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: getBaseURL(),
   timeout: 10000000000,
   headers: {
     'Content-Type': 'application/json',
