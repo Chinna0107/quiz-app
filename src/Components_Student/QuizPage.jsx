@@ -195,7 +195,7 @@ const QuizPage = ({ user }) => {
             </Typography>
 
             <RadioGroup 
-              value={answers[currentQuestion] || ''} 
+              value={answers[currentQuestion] !== undefined ? answers[currentQuestion] : ''} 
               onChange={(e) => handleAnswerChange(e.target.value)}
               sx={{ gap: 2 }}
             >
