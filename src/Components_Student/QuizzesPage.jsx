@@ -1,42 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
-  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment
+  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment, CircularProgress
 } from '@mui/material';
 import { 
   Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star, Search
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 
 const QuizzesPage = ({ user }) => {
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState([]);
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedQuizForStart, setSelectedQuizForStart] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    fetchQuizzes();
-  }, []);
-
-  const fetchQuizzes = async () => {
-    try {
+  
+  const { data: quizzes, loading, error } = useCache(
+    'user-quizzes',
+    async () => {
       const response = await api.get('/api/users/quizzes');
-      const uniqueQuizzes = response.data.filter((quiz, index, arr) => 
-        index === arr.findIndex(q => q.title === quiz.title)
+      const data = response.data || [];
+      return data.filter((quiz, index, arr) => 
+        index === arr.findIndex(q => q?.title === quiz?.title)
       );
-      setQuizzes(uniqueQuizzes);
-    } catch (error) {
-      console.error('Failed to fetch quizzes:', error);
     }
-  };
-
-  const filteredQuizzes = quizzes.filter(quiz => 
-    quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (quiz.description && quiz.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const filteredQuizzes = (quizzes || []).filter(quiz => {
+    if (!quiz?.title) return false;
+    return quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (quiz.description && quiz.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
   const showQuizInstructions = (quizId) => {
     setSelectedQuizForStart(quizId);
@@ -107,9 +103,20 @@ const QuizzesPage = ({ user }) => {
             }}
           />
         </Box>
-        <Grid container spacing={3}>
-          <AnimatePresence>
-            {filteredQuizzes.map((quiz, index) => (
+        {error ? (
+          <Box sx={{ textAlign: 'center', color: 'white', py: 8 }}>
+            <Typography variant="h5" sx={{ mb: 2 }}>Failed to load quizzes</Typography>
+            <Typography>Please try refreshing the page</Typography>
+          </Box>
+        ) : loading ? (
+          <Box sx={{ textAlign: 'center', color: 'white', py: 8 }}>
+            <CircularProgress size={60} sx={{ color: 'white', mb: 2 }} />
+            <Typography variant="h6">Loading quizzes...</Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={3}>
+            <AnimatePresence>
+              {filteredQuizzes.map((quiz, index) => (
               <Grid item xs={12} sm={6} md={4} key={quiz.id}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
@@ -182,11 +189,12 @@ const QuizzesPage = ({ user }) => {
                   </Card>
                 </motion.div>
               </Grid>
-            ))}
-          </AnimatePresence>
-        </Grid>
+              ))}
+            </AnimatePresence>
+          </Grid>
+        )}
 
-        {filteredQuizzes.length === 0 && quizzes.length > 0 && (
+        {filteredQuizzes.length === 0 && (quizzes || []).length > 0 && (
           <Box sx={{ 
             textAlign: 'center', 
             py: 8,
@@ -202,7 +210,7 @@ const QuizzesPage = ({ user }) => {
           </Box>
         )}
 
-        {quizzes.length === 0 && (
+        {!(quizzes || []).length && !loading && (
           <Box sx={{ 
             textAlign: 'center', 
             py: 8,

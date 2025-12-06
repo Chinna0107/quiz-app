@@ -1,35 +1,25 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Card, CardContent, TextField, Button, AppBar, Toolbar, Avatar, Grid } from '@mui/material';
-import { ArrowBack, Person, ExitToApp, Email, CalendarToday } from '@mui/icons-material';
+import { ArrowBack, Person, ExitToApp, Email, CalendarToday, Phone } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
-  const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    created_at: ''
-  });
+  
+  const { data: profileData, loading } = useCache(
+    'user-profile',
+    async () => {
+      const response = await api.get('/api/users/profile');
+      return response.data;
+    }
+  );
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('adminToken');
     navigate('/');
-  };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get('/api/users/profile');
-      setProfileData(response.data);
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-    }
   };
 
   return (
@@ -128,7 +118,7 @@ const Profile = ({ user }) => {
                 transition={{ delay: 0.8, duration: 0.6 }}
               >
                 <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'white', mb: 1, textShadow: '0 2px 10px rgba(0,0,0,0.3)', fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' } }}>
-                  {profileData.name || 'User Profile'}
+                  {profileData?.name || 'User Profile'}
                 </Typography>
                 <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Student Dashboard
@@ -157,7 +147,7 @@ const Profile = ({ user }) => {
                       <Box>
                         <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Full Name</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          {profileData.name || 'Loading...'}
+                          {loading ? 'Loading...' : profileData?.name || 'Not available'}
                         </Typography>
                       </Box>
                     </Box>
@@ -183,14 +173,40 @@ const Profile = ({ user }) => {
                       <Box>
                         <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Email Address</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '0.9rem', sm: '1.25rem' }, wordBreak: 'break-all' }}>
-                          {profileData.email || 'Loading...'}
+                          {loading ? 'Loading...' : profileData?.email || 'Not available'}
                         </Typography>
                       </Box>
                     </Box>
                   </motion.div>
                 </Grid>
                 
-                <Grid item xs={12}>
+                <Grid item xs={12} md={6}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.4, duration: 0.6 }}
+                  >
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      p: { xs: 2, sm: 3 }, 
+                      borderRadius: 3,
+                      background: 'linear-gradient(135deg, #FF980015, #FF570005)',
+                      border: '2px solid #FF980020',
+                      mb: { xs: 2, md: 3 }
+                    }}>
+                      <Phone sx={{ fontSize: { xs: 30, sm: 40 }, color: '#FF9800', mr: { xs: 1.5, sm: 2 } }} />
+                      <Box>
+                        <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Phone Number</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                          {loading ? 'Loading...' : profileData?.phone_number || 'Not provided'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </motion.div>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
                   <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -210,7 +226,7 @@ const Profile = ({ user }) => {
                       <Box>
                         <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Member Since</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          {profileData.created_at ? new Date(profileData.created_at).toLocaleDateString('en-GB') : 'Loading...'}
+                          {loading ? 'Loading...' : (profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString('en-GB') : 'Not available')}
                         </Typography>
                       </Box>
                     </Box>

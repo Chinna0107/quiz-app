@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 
 const Dashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -22,20 +23,9 @@ const Dashboard = ({ user }) => {
     navigate('/');
   };
 
-  const [stats, setStats] = useState({
-    totalQuizzes: 0,
-    completedQuizzes: 0,
-    averageScore: 0
-  });
-  const [quizzes, setQuizzes] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchQuizzes();
-  }, []);
-
-  const fetchQuizzes = async () => {
-    try {
+  const { data: dashboardData, loading } = useCache(
+    'dashboard-data',
+    async () => {
       const [quizzesResponse, statsResponse] = await Promise.all([
         api.get('/api/users/quizzes'),
         api.get('/api/users/user-stats')
@@ -44,24 +34,21 @@ const Dashboard = ({ user }) => {
       const uniqueQuizzes = quizzesResponse.data.filter((quiz, index, arr) => 
         index === arr.findIndex(q => q.title === quiz.title)
       );
-      setQuizzes(uniqueQuizzes);
       
       const { quizzesAttempted, averageScore } = statsResponse.data;
-      setStats({ 
-        totalQuizzes: uniqueQuizzes.length, 
-        completedQuizzes: quizzesAttempted, 
-        averageScore: averageScore 
-      });
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      // Fallback to default values if API fails
-      setStats({ 
-        totalQuizzes: quizzes.length, 
-        completedQuizzes: 0, 
-        averageScore: 0 
-      });
+      
+      return {
+        quizzes: uniqueQuizzes,
+        stats: {
+          totalQuizzes: uniqueQuizzes.length,
+          completedQuizzes: quizzesAttempted,
+          averageScore: averageScore
+        }
+      };
     }
-  };
+  );
+
+  const stats = dashboardData?.stats || { totalQuizzes: 0, completedQuizzes: 0, averageScore: 0 };
 
   const startQuiz = (quizId) => {
     navigate(`/quiz/${quizId}`);
@@ -286,7 +273,7 @@ const Dashboard = ({ user }) => {
                       textShadow: '0 2px 10px rgba(0,0,0,0.1)',
                       letterSpacing: '-0.02em'
                     }}>
-                      {item.value}
+                      {loading ? '...' : item.value}
                     </Typography>
                     <Typography sx={{ color: '#666', fontWeight: 500, fontSize: '1.1rem' }}>
                       {item.label}

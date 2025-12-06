@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
@@ -7,26 +6,17 @@ import {
 import { ArrowBack, EmojiEvents, TrendingUp, CalendarToday, Person, ExitToApp, Star } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 
 const ResultsPage = ({ user }) => {
   const navigate = useNavigate();
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchResults();
-  }, []);
-
-  const fetchResults = async () => {
-    try {
+  const { data: results, loading } = useCache(
+    'user-results',
+    async () => {
       const response = await api.get('/api/users/results');
-      setResults(response.data);
-    } catch (error) {
-      console.error('Failed to fetch results:', error);
-    } finally {
-      setLoading(false);
+      return response.data;
     }
-  };
+  );
 
   const getScoreColor = (percentage) => {
     if (percentage >= 80) return '#4CAF50';
@@ -42,7 +32,7 @@ const ResultsPage = ({ user }) => {
     return 'F';
   };
 
-  const avgPercentage = results.length > 0 
+  const avgPercentage = (results || []).length > 0 
     ? Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / results.length) 
     : 0;
 
@@ -112,7 +102,7 @@ const ResultsPage = ({ user }) => {
 
       <Box sx={{ p: 4, position: 'relative', zIndex: 1 }}>
         {/* Summary Stats */}
-        {!loading && results.length > 0 && (
+        {!loading && (results || []).length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -120,9 +110,9 @@ const ResultsPage = ({ user }) => {
           >
             <Grid container spacing={3} sx={{ mb: 4 }}>
               {[
-                { label: 'Total Quizzes', value: results.length, icon: EmojiEvents, gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
+                { label: 'Total Quizzes', value: (results || []).length, icon: EmojiEvents, gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
                 { label: 'Average Score', value: `${avgPercentage}%`, icon: TrendingUp, gradient: 'linear-gradient(135deg, #FF9800, #F57C00)' },
-                { label: 'Best Score', value: `${Math.max(...results.map(r => r.percentage))}%`, icon: Star, gradient: 'linear-gradient(135deg, #4CAF50, #45a049)' }
+                { label: 'Best Score', value: `${(results || []).length > 0 ? Math.max(...results.map(r => r.percentage)) : 0}%`, icon: Star, gradient: 'linear-gradient(135deg, #4CAF50, #45a049)' }
               ].map((stat, idx) => (
                 <Grid item xs={12} md={4} key={idx}>
                   <Card sx={{ 
@@ -176,7 +166,7 @@ const ResultsPage = ({ user }) => {
             <CircularProgress size={60} sx={{ color: 'white', mb: 2 }} />
             <Typography variant="h6">Loading results...</Typography>
           </Box>
-        ) : results.length === 0 ? (
+        ) : !(results || []).length ? (
           <Box sx={{ textAlign: 'center', color: 'white', py: 8 }}>
             <EmojiEvents sx={{ fontSize: 80, mb: 2, opacity: 0.5 }} />
             <Typography variant="h5" sx={{ mb: 1 }}>
@@ -188,7 +178,7 @@ const ResultsPage = ({ user }) => {
           </Box>
         ) : (
           <Grid container spacing={3}>
-            {results.map((result, index) => (
+            {(results || []).map((result, index) => (
               <Grid item xs={12} md={6} lg={4} key={result.id}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}

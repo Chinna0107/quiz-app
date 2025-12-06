@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar, Avatar, Chip, IconButton, LinearProgress, Divider } from '@mui/material';
 import { Dashboard, People, Quiz, Add, ExitToApp, AdminPanelSettings, TrendingUp, Analytics, Star, Notifications, Settings } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 // import QuizResultsTable from './AdminResults';  // ⬅ NEW IMPORT
 
 const AdminDashboard = ({ user }) => {
@@ -15,29 +15,15 @@ const AdminDashboard = ({ user }) => {
     navigate('/');
   };
 
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalQuizzes: 0,
-    totalSubmissions: 0
-  });
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
+  const { data: stats, loading } = useCache(
+    'admin-stats',
+    async () => {
       const response = await api.get('/api/users/stats');
-      setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-      setStats({
-        totalUsers: 0,
-        totalQuizzes: 0,
-        totalSubmissions: 0
-      });
+      return response.data;
     }
-  };
+  );
+
+  const statsData = stats || { totalUsers: 0, totalQuizzes: 0, totalSubmissions: 0 };
 
   return (
     <Box sx={{ 
@@ -117,9 +103,9 @@ const AdminDashboard = ({ user }) => {
 
         <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center" sx={{ mb: { xs: 3, md: 5 }, maxWidth: '1100px', mx: 'auto' }}>
           {[
-            { label: "Total Users", value: stats.totalUsers, icon: People, color: "#ff6b6b", gradient: "linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)", trend: "+12%" },
-            { label: "Total Quizzes", value: stats.totalQuizzes, icon: Quiz, color: "#667eea", gradient: "linear-gradient(135deg, #667eea 0%, #8a9bff 100%)", trend: "+8%" },
-            { label: "Total Submissions", value: stats.totalSubmissions, icon: TrendingUp, color: "#28a745", gradient: "linear-gradient(135deg, #28a745 0%, #4caf50 100%)", trend: "+23%" },
+            { label: "Total Users", value: statsData.totalUsers, icon: People, color: "#ff6b6b", gradient: "linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)", trend: "+12%" },
+            { label: "Total Quizzes", value: statsData.totalQuizzes, icon: Quiz, color: "#667eea", gradient: "linear-gradient(135deg, #667eea 0%, #8a9bff 100%)", trend: "+8%" },
+            { label: "Total Submissions", value: statsData.totalSubmissions, icon: TrendingUp, color: "#28a745", gradient: "linear-gradient(135deg, #28a745 0%, #4caf50 100%)", trend: "+23%" },
           ].map((item, index) => (
             <Grid item xs={12} sm={6} md={6} lg={4} key={index}>
               <motion.div 
@@ -158,7 +144,7 @@ const AdminDashboard = ({ user }) => {
                       animate={{ scale: 1 }}
                       transition={{ delay: index * 0.3 + 0.5, type: "spring", stiffness: 200 }}
                     >
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#333', mb: 1 }}>{item.value}</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#333', mb: 1 }}>{loading ? '...' : item.value}</Typography>
                     </motion.div>
                     <Typography variant="body1" sx={{ color: '#666', mb: 2 }}>{item.label}</Typography>
                     <LinearProgress 

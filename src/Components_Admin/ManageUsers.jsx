@@ -1,41 +1,29 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, AppBar, Toolbar, Avatar, 
-  Button, Chip, Switch, IconButton
+  Button, Chip, Switch, IconButton, CircularProgress
 } from '@mui/material';
 import { ArrowBack, AdminPanelSettings, ExitToApp, Block, CheckCircle } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 import api from '../config/api';
+import { useCache } from '../hooks/useCache';
 
 const ManageUsers = ({ user }) => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { data: users, loading, refetch } = useCache(
+    'admin-users',
+    async () => {
+      const response = await api.get('/api/admin/users');
+      return response.data;
+    }
+  );
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('adminToken');
     navigate('/');
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/api/admin/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleBlockUser = async (userId, isBlocked) => {
@@ -47,7 +35,7 @@ const ManageUsers = ({ user }) => {
         timer: 2000,
         showConfirmButton: false
       });
-      fetchUsers(); // Refresh the list
+      refetch(); // Refresh the list
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -84,8 +72,11 @@ const ManageUsers = ({ user }) => {
               </Typography>
               
               {loading ? (
-                <Typography sx={{ textAlign: 'center', py: 4 }}>Loading users...</Typography>
-              ) : users.length > 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress sx={{ color: '#ff6b6b', mb: 2 }} />
+                  <Typography>Loading users...</Typography>
+                </Box>
+              ) : (users || []).length > 0 ? (
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -98,7 +89,7 @@ const ManageUsers = ({ user }) => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {users.map((userData, index) => (
+                      {(users || []).map((userData, index) => (
                         <TableRow key={index} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}>
                           <TableCell>{userData.name}</TableCell>
                           <TableCell>{userData.email}</TableCell>
