@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
-  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText
+  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment
 } from '@mui/material';
 import { 
-  Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star
+  Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star, Search
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../config/api';
@@ -15,6 +15,7 @@ const QuizzesPage = ({ user }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedQuizForStart, setSelectedQuizForStart] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchQuizzes();
@@ -31,6 +32,11 @@ const QuizzesPage = ({ user }) => {
       console.error('Failed to fetch quizzes:', error);
     }
   };
+
+  const filteredQuizzes = quizzes.filter(quiz => 
+    quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (quiz.description && quiz.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const showQuizInstructions = (quizId) => {
     setSelectedQuizForStart(quizId);
@@ -78,9 +84,32 @@ const QuizzesPage = ({ user }) => {
       </AppBar>
 
       <Box sx={{ p: 4 }}>
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+          <TextField
+            placeholder="Search quizzes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              maxWidth: 600,
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                background: 'rgba(255,255,255,0.95)',
+                borderRadius: 3,
+                '&:hover': { background: 'white' }
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: '#667eea' }} />
+                </InputAdornment>
+              )
+            }}
+          />
+        </Box>
         <Grid container spacing={3}>
           <AnimatePresence>
-            {quizzes.map((quiz, index) => (
+            {filteredQuizzes.map((quiz, index) => (
               <Grid item xs={12} sm={6} md={4} key={quiz.id}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
@@ -156,6 +185,22 @@ const QuizzesPage = ({ user }) => {
             ))}
           </AnimatePresence>
         </Grid>
+
+        {filteredQuizzes.length === 0 && quizzes.length > 0 && (
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            color: 'white'
+          }}>
+            <Search sx={{ fontSize: 80, mb: 2, opacity: 0.5 }} />
+            <Typography variant="h5" sx={{ mb: 1 }}>
+              No Quizzes Found
+            </Typography>
+            <Typography>
+              Try a different search term
+            </Typography>
+          </Box>
+        )}
 
         {quizzes.length === 0 && (
           <Box sx={{ 

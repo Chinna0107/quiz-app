@@ -18,6 +18,7 @@ import Footer from './General/Footer';
 import Contact from './General/Contact';
 import TermsOfService from './General/TermsOfService';
 import PrivacyPolicy from './General/PrivacyPolicy';
+import AboutUs from './General/AboutUs';
 import ProtectedRoute from './components/ProtectedRoute';
 import Settings from './Components_Student/Settings';
 
@@ -74,6 +75,7 @@ function App() {
           <Route path="/admin/results" element={<ProtectedRoute requireAdmin><QuizResults user={user} /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requireAdmin><ManageUsers user={user} /></ProtectedRoute>} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<AboutUs />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
         </Routes>

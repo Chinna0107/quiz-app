@@ -11,6 +11,7 @@ const SignUp = () => {
   const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState({
     name: '',
+    phone_number: '',
     password: '',
     confirmPassword: ''
   });
@@ -44,7 +45,7 @@ const SignUp = () => {
       return;
     }
     try {
-      await api.post('/api/users/create-account', { email, name: formData.name, password: formData.password, confirmPassword: formData.confirmPassword });
+      await api.post('/api/users/create-account', { email, name: formData.name, phone_number: formData.phone_number, password: formData.password, confirmPassword: formData.confirmPassword });
       Swal.fire({ icon: 'success', title: 'Account Created!', text: 'You can now login', timer: 2000, showConfirmButton: false });
       navigate('/');
     } catch (error) {
@@ -133,6 +134,7 @@ const SignUp = () => {
             <Typography variant="body2" sx={{ textAlign: 'center', mb: 3, color: '#666' }}>Fill in your details</Typography>
             <Box component="form" onSubmit={handleDetailsSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField name="name" label="Full Name" value={formData.name} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, '&:hover fieldset': { borderColor: '#667eea' }, '&.Mui-focused fieldset': { borderColor: '#667eea' } } }} />
+              <TextField name="phone_number" label="Phone Number" value={formData.phone_number} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, '&:hover fieldset': { borderColor: '#667eea' }, '&.Mui-focused fieldset': { borderColor: '#667eea' } } }} />
               <TextField name="password" type="password" label="Password" value={formData.password} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, '&:hover fieldset': { borderColor: '#667eea' }, '&.Mui-focused fieldset': { borderColor: '#667eea' } } }} />
               <TextField name="confirmPassword" type="password" label="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, '&:hover fieldset': { borderColor: '#667eea' }, '&.Mui-focused fieldset': { borderColor: '#667eea' } } }} />
               <Button type="submit" variant="contained" fullWidth sx={{ mt: 1, py: 1.5, borderRadius: 2, background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)', fontSize: '1.1rem', fontWeight: 'bold', '&:hover': { background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)' } }}>Create Account</Button>
