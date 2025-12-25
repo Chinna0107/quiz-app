@@ -104,7 +104,7 @@ const AdminDashboard = ({ user }) => {
         <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center" sx={{ mb: { xs: 3, md: 5 }, maxWidth: '1100px', mx: 'auto' }}>
           {[
             { label: "Total Users", value: statsData.totalUsers, icon: People, color: "#ff6b6b", gradient: "linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)", trend: "+12%" },
-            { label: "Total Quizzes", value: statsData.totalQuizzes, icon: Quiz, color: "#667eea", gradient: "linear-gradient(135deg, #667eea 0%, #8a9bff 100%)", trend: "+8%" },
+            { label: "Active Quizzes", value: statsData.totalQuizzes, icon: Quiz, color: "#667eea", gradient: "linear-gradient(135deg, #667eea 0%, #8a9bff 100%)", trend: "+8%", clickable: true, action: () => navigate('/admin/quiz-preview') },
             { label: "Total Submissions", value: statsData.totalSubmissions, icon: TrendingUp, color: "#28a745", gradient: "linear-gradient(135deg, #28a745 0%, #4caf50 100%)", trend: "+23%" },
           ].map((item, index) => (
             <Grid item xs={12} sm={6} md={6} lg={4} key={index}>
@@ -114,15 +114,22 @@ const AdminDashboard = ({ user }) => {
                 transition={{ delay: index * 0.2, duration: 0.6 }}
                 whileHover={{ y: -10, transition: { duration: 0.3 } }}
               >
-                <Card sx={{ 
-                  background: 'rgba(255,255,255,0.95)', 
-                  backdropFilter: 'blur(20px)',
-                  borderRadius: 4,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}>
+                <Card 
+                  onClick={item.clickable ? item.action : undefined}
+                  sx={{ 
+                    background: 'rgba(255,255,255,0.95)', 
+                    backdropFilter: 'blur(20px)',
+                    borderRadius: 4,
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    cursor: item.clickable ? 'pointer' : 'default',
+                    '&:hover': item.clickable ? {
+                      transform: 'translateY(-5px)',
+                      boxShadow: '0 25px 50px rgba(0,0,0,0.15)'
+                    } : {}
+                  }}>
                   <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: item.gradient }} />
                   <CardContent sx={{ textAlign: 'center', py: { xs: 3, md: 5 }, px: { xs: 3, md: 5 } }}>
                     <Box sx={{ 

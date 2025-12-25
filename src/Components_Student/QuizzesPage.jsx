@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
-  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment, CircularProgress
+  Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment, CircularProgress, Chip, Divider, Badge
 } from '@mui/material';
 import { 
-  Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star, Search
+  Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star, Search, PlayArrow, School, TrendingUp, EmojiEvents, AccessTime, Assignment
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../config/api';
@@ -53,56 +53,176 @@ const QuizzesPage = ({ user }) => {
       <AppBar position="static" sx={{ 
         background: 'rgba(255, 255, 255, 0.1)', 
         backdropFilter: 'blur(20px)', 
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
       }} elevation={0}>
-        <Toolbar>
-          <Button 
-            startIcon={<ArrowBack />} 
-            onClick={() => navigate('/dashboard')} 
-            sx={{ color: 'white', mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-          <Typography variant="h5" sx={{ 
-            flexGrow: 1, 
-            color: 'white', 
-            fontWeight: 'bold'
-          }}>
-            📚 Available Quizzes
-          </Typography>
-          <Avatar 
-            sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', cursor: 'pointer' }} 
-            onClick={() => navigate('/profile')}
-          >
-            <Person sx={{ color: 'white' }} />
-          </Avatar>
+        <Toolbar sx={{ py: 1 }}>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button 
+              startIcon={<ArrowBack />} 
+              onClick={() => navigate('/dashboard')} 
+              sx={{ 
+                color: 'white', 
+                mr: 3,
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 3,
+                px: 3,
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.2)'
+                }
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </motion.div>
+          <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
+            <Typography variant="h4" sx={{ 
+              color: 'white', 
+              fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #fff, #e3f2fd)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' }
+            }}>
+              🎯 Quiz Collection
+            </Typography>
+            <Typography variant="subtitle1" sx={{ 
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontWeight: 300
+            }}>
+              Challenge yourself with our curated quizzes
+            </Typography>
+          </Box>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <Avatar 
+              sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                cursor: 'pointer',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }} 
+              onClick={() => navigate('/profile')}
+            >
+              <Person sx={{ color: 'white' }} />
+            </Avatar>
+          </motion.div>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 4 }}>
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
-          <TextField
-            placeholder="Search quizzes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{
-              maxWidth: 600,
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                background: 'rgba(255,255,255,0.95)',
-                borderRadius: 3,
-                '&:hover': { background: 'white' }
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: '#667eea' }} />
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Enhanced Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Typography 
+              variant="h2" 
+              sx={{ 
+                color: 'white', 
+                mb: 2, 
+                fontWeight: 'bold',
+                textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
+                background: 'linear-gradient(45deg, #fff, #e3f2fd)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              🚀 Explore Quizzes
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)', 
+                fontWeight: 300,
+                maxWidth: 700,
+                mx: 'auto',
+                mb: 4
+              }}
+            >
+              Discover engaging quizzes designed to test and expand your knowledge across various topics
+            </Typography>
+            
+            {/* Stats Bar */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, mb: 4, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Available', value: filteredQuizzes.length, icon: Assignment, color: '#667eea' },
+                { label: 'Categories', value: '5+', icon: School, color: '#4CAF50' },
+                { label: 'Difficulty', value: 'All Levels', icon: TrendingUp, color: '#FF9800' }
+              ].map((stat, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.1, duration: 0.5 }}
+                >
+                  <Chip
+                    icon={<stat.icon sx={{ fontSize: 18, color: stat.color }} />}
+                    label={`${stat.value} ${stat.label}`}
+                    sx={{
+                      background: 'rgba(255,255,255,0.15)',
+                      backdropFilter: 'blur(10px)',
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      fontWeight: 'bold',
+                      px: 2,
+                      py: 1,
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                </motion.div>
+              ))}
+            </Box>
+          </Box>
+        </motion.div>
+
+        {/* Enhanced Search Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <Box sx={{ mb: 5, display: 'flex', justifyContent: 'center' }}>
+            <TextField
+              placeholder="🔍 Search for quizzes by title or topic..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                maxWidth: 700,
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(20px)',
+                  borderRadius: 4,
+                  fontSize: '1.1rem',
+                  py: 1,
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  '&:hover': { 
+                    background: 'white',
+                    border: '2px solid rgba(102, 126, 234, 0.3)'
+                  },
+                  '&.Mui-focused': {
+                    border: '2px solid #667eea',
+                    boxShadow: '0 0 20px rgba(102, 126, 234, 0.3)'
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: '#667eea', fontSize: 24 }} />
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Box>
+        </motion.div>
         {error ? (
           <Box sx={{ textAlign: 'center', color: 'white', py: 8 }}>
             <Typography variant="h5" sx={{ mb: 2 }}>Failed to load quizzes</Typography>
@@ -119,72 +239,227 @@ const QuizzesPage = ({ user }) => {
               {filteredQuizzes.map((quiz, index) => (
               <Grid item xs={12} sm={6} md={4} key={quiz.id}>
                 <motion.div
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ y: -10, scale: 1.02 }}
+                  initial={{ opacity: 0, y: 50, rotateX: 10 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  exit={{ opacity: 0, y: -50, scale: 0.9 }}
+                  transition={{ duration: 0.6, delay: index * 0.1, type: "spring", stiffness: 100 }}
+                  whileHover={{ 
+                    y: -15, 
+                    scale: 1.03,
+                    rotateY: 2,
+                    transition: { duration: 0.3 }
+                  }}
                 >
                   <Card sx={{ 
-                    background: 'rgba(255,255,255,0.95)', 
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: 4, 
-                    p: 3, 
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    height: '100%',
+                    background: 'rgba(255,255,255,0.98)', 
+                    backdropFilter: 'blur(30px)',
+                    borderRadius: 6, 
+                    p: 0, 
+                    boxShadow: '0 25px 80px rgba(0,0,0,0.15)',
+                    border: '2px solid rgba(255, 255, 255, 0.4)',
+                    height: 450,
                     display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <Box sx={{ 
-                        width: 60, 
-                        height: 60, 
-                        borderRadius: '50%', 
+                    flexDirection: 'column',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transform: 'perspective(1000px)',
+                    '&:hover': {
+                      boxShadow: '0 35px 100px rgba(0,0,0,0.2)',
+                      '& .quiz-icon': {
+                        transform: 'scale(1.1) rotate(5deg)'
+                      },
+                      '& .quiz-title': {
                         background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                        mx: 'auto'
-                      }}>
-                        <Quiz sx={{ fontSize: 30, color: 'white' }} />
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '6px',
+                      background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                      borderRadius: '6px 6px 0 0'
+                    }
+                  }}>
+                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 4 }}>
+                      {/* Enhanced Icon with Badge */}
+                      <Box sx={{ position: 'relative', alignSelf: 'center', mb: 3 }}>
+                        <Badge 
+                          badgeContent={index + 1} 
+                          color="primary"
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              background: 'linear-gradient(135deg, #FF9800, #F57C00)',
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.75rem'
+                            }
+                          }}
+                        >
+                          <Box 
+                            className="quiz-icon"
+                            sx={{ 
+                              width: 90, 
+                              height: 90, 
+                              borderRadius: '50%', 
+                              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 15px 40px rgba(102, 126, 234, 0.4)',
+                              transition: 'all 0.3s ease',
+                              position: 'relative',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: '-4px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                opacity: 0.3,
+                                filter: 'blur(10px)',
+                                zIndex: -1
+                              }
+                            }}
+                          >
+                            <Quiz sx={{ fontSize: 45, color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+                          </Box>
+                        </Badge>
                       </Box>
                       
-                      <Typography variant="h6" sx={{ 
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        color: '#333',
-                        mb: 2
-                      }}>
+                      {/* Enhanced Title */}
+                      <Typography 
+                        variant="h5" 
+                        className="quiz-title"
+                        sx={{ 
+                          textAlign: 'center',
+                          fontWeight: 'bold',
+                          color: '#333',
+                          mb: 2,
+                          fontSize: '1.4rem',
+                          lineHeight: 1.3,
+                          transition: 'all 0.3s ease',
+                          letterSpacing: '-0.01em'
+                        }}
+                      >
                         {quiz.title}
                       </Typography>
                       
-                      <Typography sx={{ 
-                        color: '#666',
-                        textAlign: 'center',
-                        mb: 3,
-                        flex: 1
-                      }}>
-                        {quiz.description || 'Test your knowledge with this comprehensive quiz'}
-                      </Typography>
+                      <Divider sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea, #764ba2)', height: 2, borderRadius: 1 }} />
                       
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        onClick={() => showQuizInstructions(quiz.id)}
-                        sx={{
-                          py: 1.5,
-                          borderRadius: 3,
-                          background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                          boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #5a67d8, #6b46c1)',
-                            boxShadow: '0 12px 35px rgba(102, 126, 234, 0.4)'
-                          }
-                        }}
-                      >
-                        Start Quiz
-                      </Button>
+                      {/* Enhanced Quiz Stats */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        mb: 3,
+                        p: 2,
+                        background: 'rgba(102, 126, 234, 0.05)',
+                        borderRadius: 3,
+                        border: '1px solid rgba(102, 126, 234, 0.1)'
+                      }}>
+                        <Box sx={{ textAlign: 'center', flex: 1 }}>
+                          <Typography variant="h6" sx={{ color: '#667eea', fontWeight: 'bold' }}>50</Typography>
+                          <Typography variant="caption" sx={{ color: '#666' }}>Questions</Typography>
+                        </Box>
+                        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                        <Box sx={{ textAlign: 'center', flex: 1 }}>
+                          <Typography variant="h6" sx={{ color: '#FF9800', fontWeight: 'bold' }}>★ 4.8</Typography>
+                          <Typography variant="caption" sx={{ color: '#666' }}>Rating</Typography>
+                        </Box>
+                        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                        <Box sx={{ textAlign: 'center', flex: 1 }}>
+                          <Typography variant="h6" sx={{ color: '#4CAF50', fontWeight: 'bold' }}>85%</Typography>
+                          <Typography variant="caption" sx={{ color: '#666' }}>Pass Rate</Typography>
+                        </Box>
+                      </Box>
+                      
+                      {/* Enhanced Metadata */}
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 4 }}>
+                        <Chip
+                          icon={<AccessTime sx={{ fontSize: 16 }} />}
+                          label="60 min"
+                          size="small"
+                          sx={{
+                            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(102, 126, 234, 0.2))',
+                            color: '#667eea',
+                            fontWeight: 'bold',
+                            border: '1px solid rgba(102, 126, 234, 0.3)',
+                            '&:hover': { transform: 'scale(1.05)' }
+                          }}
+                        />
+                        <Chip
+                          icon={<EmojiEvents sx={{ fontSize: 16 }} />}
+                          label="100 pts"
+                          size="small"
+                          sx={{
+                            background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.2))',
+                            color: '#FF9800',
+                            fontWeight: 'bold',
+                            border: '1px solid rgba(255, 152, 0, 0.3)',
+                            '&:hover': { transform: 'scale(1.05)' }
+                          }}
+                        />
+                        <Chip
+                          icon={<Star sx={{ fontSize: 16 }} />}
+                          label="Medium"
+                          size="small"
+                          sx={{
+                            background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2))',
+                            color: '#4CAF50',
+                            fontWeight: 'bold',
+                            border: '1px solid rgba(76, 175, 80, 0.3)',
+                            '&:hover': { transform: 'scale(1.05)' }
+                          }}
+                        />
+                      </Box>
+                      
+                      {/* Enhanced Button with Progress Ring */}
+                      <Box sx={{ position: 'relative', mt: 'auto' }}>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            startIcon={<PlayArrow />}
+                            onClick={() => showQuizInstructions(quiz.id)}
+                            sx={{
+                              py: 2.5,
+                              borderRadius: 4,
+                              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                              boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
+                              fontSize: '1.1rem',
+                              fontWeight: 'bold',
+                              textTransform: 'none',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: '-100%',
+                                width: '100%',
+                                height: '100%',
+                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                transition: 'left 0.5s'
+                              },
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #5a67d8, #6b46c1)',
+                                boxShadow: '0 15px 40px rgba(102, 126, 234, 0.5)',
+                                transform: 'translateY(-2px)',
+                                '&::before': {
+                                  left: '100%'
+                                }
+                              }
+                            }}
+                          >
+                            🚀 Start Quiz Journey
+                          </Button>
+                        </motion.div>
+                      </Box>
                     </CardContent>
                   </Card>
                 </motion.div>

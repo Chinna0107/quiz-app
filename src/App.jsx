@@ -14,6 +14,7 @@ import CreateQuiz from './Components_Admin/CreateQuiz';
 import QuizResults from './Components_Admin/QuizResults';
 import ManageUsers from './Components_Admin/ManageUsers';
 import AdminProfile from './Components_Admin/AdminProfile';
+import QuizPreview from './Components_Admin/QuizPreview';
 import Footer from './General/Footer';
 import Contact from './General/Contact';
 import TermsOfService from './General/TermsOfService';
@@ -74,6 +75,7 @@ function App() {
           <Route path="/admin/create-quiz" element={<ProtectedRoute requireAdmin><CreateQuiz /></ProtectedRoute>} />
           <Route path="/admin/results" element={<ProtectedRoute requireAdmin><QuizResults user={user} /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requireAdmin><ManageUsers user={user} /></ProtectedRoute>} />
+          <Route path="/admin/quiz-preview" element={<ProtectedRoute requireAdmin><QuizPreview user={user} /></ProtectedRoute>} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/terms" element={<TermsOfService />} />

@@ -185,11 +185,46 @@ const QuizPage = ({ user }) => {
             boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
             border: '1px solid rgba(255, 255, 255, 0.3)'
           }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 2, 
+              mb: 3,
+              pb: 2,
+              borderBottom: '2px solid #667eea20'
+            }}>
+              <Box sx={{ 
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white',
+                borderRadius: '50%',
+                width: 50,
+                height: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                fontSize: '1.2rem',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+              }}>
+                {currentQuestion + 1}
+              </Box>
+              <Typography variant="body2" sx={{ 
+                color: '#667eea', 
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                textTransform: 'uppercase',
+                letterSpacing: 1
+              }}>
+                Question {currentQuestion + 1} of {currentQuiz.questions.length}
+              </Typography>
+            </Box>
+            
             <Typography variant="h4" sx={{ 
               mb: 4, 
               color: '#333', 
               fontWeight: 600,
-              lineHeight: 1.4
+              lineHeight: 1.4,
+              fontSize: { xs: '1.3rem', sm: '1.8rem', md: '2rem' }
             }}>
               {question.question_text}
             </Typography>
@@ -208,22 +243,44 @@ const QuizPage = ({ user }) => {
                   <FormControlLabel
                     value={index}
                     control={<Radio sx={{ '&.Mui-checked': { color: '#667eea' } }} />}
-                    label={option.option_text}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                        <Box sx={{ 
+                          minWidth: 35,
+                          height: 35,
+                          borderRadius: '50%',
+                          background: answers[currentQuestion] === index ? 'linear-gradient(135deg, #667eea, #764ba2)' : '#e0e0e0',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold',
+                          fontSize: '0.9rem',
+                          transition: 'all 0.3s ease'
+                        }}>
+                          {String.fromCharCode(65 + index)}
+                        </Box>
+                        <Typography sx={{ flex: 1 }}>{option.option_text}</Typography>
+                      </Box>
+                    }
                     sx={{ 
                       m: 0,
                       p: 2,
                       borderRadius: 3,
-                      border: '2px solid transparent',
-                      background: 'linear-gradient(135deg, #f8f9ff, #e3f2fd)',
+                      border: answers[currentQuestion] === index ? '2px solid #667eea' : '2px solid transparent',
+                      background: answers[currentQuestion] === index ? 'linear-gradient(135deg, #667eea15, #764ba215)' : 'linear-gradient(135deg, #f8f9ff, #e3f2fd)',
+                      transition: 'all 0.3s ease',
                       '&:hover': {
                         background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
-                        border: '2px solid rgba(102, 126, 234, 0.3)'
+                        border: '2px solid rgba(102, 126, 234, 0.3)',
+                        transform: 'translateX(5px)'
                       },
                       '& .MuiFormControlLabel-label': { 
-                        fontSize: '1.2rem',
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
                         fontWeight: 500,
                         color: '#333',
-                        flex: 1
+                        flex: 1,
+                        width: '100%'
                       },
                       '& .Mui-checked + .MuiFormControlLabel-label': {
                         color: '#667eea',
