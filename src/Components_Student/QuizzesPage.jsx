@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar,
+  Box, Typography, Card, CardContent, CardMedia, Grid, Button, AppBar, Toolbar,
   Avatar, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemIcon, ListItemText, TextField, InputAdornment, CircularProgress, Chip, Divider, Badge
 } from '@mui/material';
 import { 
   Quiz, Person, ExitToApp, ArrowBack, Timer, CheckCircle, Warning, Star, Search, PlayArrow, School, TrendingUp, EmojiEvents, AccessTime, Assignment
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 import api from '../config/api';
 import { useCache } from '../hooks/useCache';
 
@@ -16,6 +17,33 @@ const QuizzesPage = ({ user }) => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedQuizForStart, setSelectedQuizForStart] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const quizImages = [
+    'https://res.cloudinary.com/dgyykbmt6/image/upload/v1772647765/1_vcbzgr.png',
+    'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',
+    'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800',
+    'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800',
+    'https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800',
+    'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800'
+  ];
+  
+  useEffect(() => {
+    enterFullscreen();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const enterFullscreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+  };
+
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement) {
+      Swal.fire({ icon: 'warning', title: 'Warning', text: 'Please stay in fullscreen mode!' });
+      enterFullscreen();
+    }
+  };
   
   const { data: quizzes, loading, error } = useCache(
     'user-quizzes',
@@ -266,8 +294,8 @@ const QuizzesPage = ({ user }) => {
                     transform: 'perspective(1000px)',
                     '&:hover': {
                       boxShadow: '0 35px 100px rgba(0,0,0,0.2)',
-                      '& .quiz-icon': {
-                        transform: 'scale(1.1) rotate(5deg)'
+                      '& .quiz-image': {
+                        transform: 'scale(1.1)'
                       },
                       '& .quiz-title': {
                         background: 'linear-gradient(135deg, #667eea, #764ba2)',
@@ -275,73 +303,28 @@ const QuizzesPage = ({ user }) => {
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent'
                       }
-                    },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: '6px',
-                      background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                      borderRadius: '6px 6px 0 0'
                     }
                   }}>
-                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 4 }}>
-                      {/* Enhanced Icon with Badge */}
-                      <Box sx={{ position: 'relative', alignSelf: 'center', mb: 3 }}>
-                        <Badge 
-                          badgeContent={index + 1} 
-                          color="primary"
-                          sx={{
-                            '& .MuiBadge-badge': {
-                              background: 'linear-gradient(135deg, #FF9800, #F57C00)',
-                              color: 'white',
-                              fontWeight: 'bold',
-                              fontSize: '0.75rem'
-                            }
-                          }}
-                        >
-                          <Box 
-                            className="quiz-icon"
-                            sx={{ 
-                              width: 90, 
-                              height: 90, 
-                              borderRadius: '50%', 
-                              background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: '0 15px 40px rgba(102, 126, 234, 0.4)',
-                              transition: 'all 0.3s ease',
-                              position: 'relative',
-                              '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: '-4px',
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                opacity: 0.3,
-                                filter: 'blur(10px)',
-                                zIndex: -1
-                              }
-                            }}
-                          >
-                            <Quiz sx={{ fontSize: 45, color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
-                          </Box>
-                        </Badge>
-                      </Box>
-                      
-                      {/* Enhanced Title */}
+                    <CardMedia
+                      component="img"
+                      className="quiz-image"
+                      height="180"
+                      image={quiz.image || quizImages[index % quizImages.length]}
+                      alt={quiz.title}
+                      sx={{
+                        transition: 'transform 0.3s ease',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
                       <Typography 
                         variant="h5" 
                         className="quiz-title"
                         sx={{ 
-                          textAlign: 'center',
                           fontWeight: 'bold',
                           color: '#333',
                           mb: 2,
-                          fontSize: '1.4rem',
+                          fontSize: '1.3rem',
                           lineHeight: 1.3,
                           transition: 'all 0.3s ease',
                           letterSpacing: '-0.01em'
@@ -350,36 +333,9 @@ const QuizzesPage = ({ user }) => {
                         {quiz.title}
                       </Typography>
                       
-                      <Divider sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea, #764ba2)', height: 2, borderRadius: 1 }} />
+                      <Divider sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea, #764ba2)', height: 2, borderRadius: 1 }} />
                       
-                      {/* Enhanced Quiz Stats */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        mb: 3,
-                        p: 2,
-                        background: 'rgba(102, 126, 234, 0.05)',
-                        borderRadius: 3,
-                        border: '1px solid rgba(102, 126, 234, 0.1)'
-                      }}>
-                        <Box sx={{ textAlign: 'center', flex: 1 }}>
-                          <Typography variant="h6" sx={{ color: '#667eea', fontWeight: 'bold' }}>50</Typography>
-                          <Typography variant="caption" sx={{ color: '#666' }}>Questions</Typography>
-                        </Box>
-                        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-                        <Box sx={{ textAlign: 'center', flex: 1 }}>
-                          <Typography variant="h6" sx={{ color: '#FF9800', fontWeight: 'bold' }}>★ 4.8</Typography>
-                          <Typography variant="caption" sx={{ color: '#666' }}>Rating</Typography>
-                        </Box>
-                        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-                        <Box sx={{ textAlign: 'center', flex: 1 }}>
-                          <Typography variant="h6" sx={{ color: '#4CAF50', fontWeight: 'bold' }}>85%</Typography>
-                          <Typography variant="caption" sx={{ color: '#666' }}>Pass Rate</Typography>
-                        </Box>
-                      </Box>
-                      
-                      {/* Enhanced Metadata */}
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 4 }}>
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                         <Chip
                           icon={<AccessTime sx={{ fontSize: 16 }} />}
                           label="60 min"
@@ -388,20 +344,7 @@ const QuizzesPage = ({ user }) => {
                             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(102, 126, 234, 0.2))',
                             color: '#667eea',
                             fontWeight: 'bold',
-                            border: '1px solid rgba(102, 126, 234, 0.3)',
-                            '&:hover': { transform: 'scale(1.05)' }
-                          }}
-                        />
-                        <Chip
-                          icon={<EmojiEvents sx={{ fontSize: 16 }} />}
-                          label="100 pts"
-                          size="small"
-                          sx={{
-                            background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.2))',
-                            color: '#FF9800',
-                            fontWeight: 'bold',
-                            border: '1px solid rgba(255, 152, 0, 0.3)',
-                            '&:hover': { transform: 'scale(1.05)' }
+                            border: '1px solid rgba(102, 126, 234, 0.3)'
                           }}
                         />
                         <Chip
@@ -412,14 +355,12 @@ const QuizzesPage = ({ user }) => {
                             background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.2))',
                             color: '#4CAF50',
                             fontWeight: 'bold',
-                            border: '1px solid rgba(76, 175, 80, 0.3)',
-                            '&:hover': { transform: 'scale(1.05)' }
+                            border: '1px solid rgba(76, 175, 80, 0.3)'
                           }}
                         />
                       </Box>
                       
-                      {/* Enhanced Button with Progress Ring */}
-                      <Box sx={{ position: 'relative', mt: 'auto' }}>
+                      <Box sx={{ mt: 'auto' }}>
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button
                             fullWidth
@@ -427,36 +368,20 @@ const QuizzesPage = ({ user }) => {
                             startIcon={<PlayArrow />}
                             onClick={() => showQuizInstructions(quiz.id)}
                             sx={{
-                              py: 2.5,
-                              borderRadius: 4,
+                              py: 2,
+                              borderRadius: 3,
                               background: 'linear-gradient(135deg, #667eea, #764ba2)',
                               boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
-                              fontSize: '1.1rem',
+                              fontSize: '1rem',
                               fontWeight: 'bold',
                               textTransform: 'none',
-                              position: 'relative',
-                              overflow: 'hidden',
-                              '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: '-100%',
-                                width: '100%',
-                                height: '100%',
-                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                                transition: 'left 0.5s'
-                              },
                               '&:hover': {
                                 background: 'linear-gradient(135deg, #5a67d8, #6b46c1)',
-                                boxShadow: '0 15px 40px rgba(102, 126, 234, 0.5)',
-                                transform: 'translateY(-2px)',
-                                '&::before': {
-                                  left: '100%'
-                                }
+                                boxShadow: '0 15px 40px rgba(102, 126, 234, 0.5)'
                               }
                             }}
                           >
-                            🚀 Start Quiz Journey
+                            Start Quiz
                           </Button>
                         </motion.div>
                       </Box>

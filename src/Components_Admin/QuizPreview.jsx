@@ -137,16 +137,13 @@ const QuizPreview = ({ user }) => {
                           variant="h6" 
                           sx={{ 
                             fontWeight: 'bold',
-                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
+                            color: '#333',
                             fontSize: '1.1rem',
                             lineHeight: 1.3,
                             mb: 2,
-                            height: '4.2rem',
+                            height: '3.6rem',
                             display: '-webkit-box',
-                            WebkitLineClamp: 3,
+                            WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis'

@@ -173,7 +173,7 @@ const Login = ({ onLogin }) => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Button
                     variant="text"
-                    onClick={() => navigate('/forgot-password')}
+                    onClick={() => navigate('#')}
                     sx={{
                       borderRadius: 2,
                       transition: 'all 0.3s ease',

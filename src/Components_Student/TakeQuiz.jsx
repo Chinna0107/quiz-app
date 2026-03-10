@@ -12,10 +12,26 @@ const TakeQuiz = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchQuiz();
+    enterFullscreen();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [quizId]);
+
+  const enterFullscreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+  };
+
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement) {
+      Swal.fire({ icon: 'warning', title: 'Warning', text: 'Please stay in fullscreen mode during the quiz!' });
+      enterFullscreen();
+    }
+  };
 
   const fetchQuiz = async () => {
     try {
@@ -46,6 +62,7 @@ const TakeQuiz = () => {
   };
 
   const handleSubmit = async () => {
+    setSubmitting(true);
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       const response = await api.post(`/api/users/quiz/${quizId}/submit`, { 
@@ -54,6 +71,8 @@ const TakeQuiz = () => {
       });
       
       const { score, totalQuestions, percentage } = response.data;
+      
+      if (document.fullscreenElement) document.exitFullscreen();
       
       Swal.fire({
         icon: 'success',
@@ -69,6 +88,8 @@ const TakeQuiz = () => {
       navigate('/dashboard');
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to submit quiz' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -127,7 +148,7 @@ const TakeQuiz = () => {
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={Object.keys(answers).length !== quiz.questions.length}
+                  disabled={Object.keys(answers).length !== quiz.questions.length || submitting}
                   sx={{
                     px: 4,
                     py: 1.5,
@@ -136,7 +157,7 @@ const TakeQuiz = () => {
                     '&:hover': { background: 'linear-gradient(45deg, #5a6fd8, #6a4190)' }
                   }}
                 >
-                  Submit Quiz
+                  {submitting ? 'Submitting...' : 'Submit Quiz'}
                 </Button>
               ) : (
                 <Button

@@ -15,10 +15,26 @@ const QuizPage = ({ user }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadQuiz();
+    enterFullscreen();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [quizId]);
+
+  const enterFullscreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+  };
+
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement) {
+      Swal.fire({ icon: 'warning', title: 'Warning', text: 'Please stay in fullscreen mode during the quiz!' });
+      enterFullscreen();
+    }
+  };
 
   const loadQuiz = async () => {
     try {
@@ -47,12 +63,15 @@ const QuizPage = ({ user }) => {
   };
 
   const handleSubmit = async () => {
+    setSubmitting(true);
     try {
       const response = await api.post(`/api/users/quiz/${quizId}/submit`, { 
         answers, userId: user?.id 
       });
 
       const { score, totalQuestions, percentage } = response.data;
+
+      if (document.fullscreenElement) document.exitFullscreen();
 
       Swal.fire({
         icon: 'success',
@@ -68,6 +87,8 @@ const QuizPage = ({ user }) => {
       navigate('/dashboard');
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to submit quiz' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -331,7 +352,7 @@ const QuizPage = ({ user }) => {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={Object.keys(answers).length !== currentQuiz.questions.length}
+            disabled={Object.keys(answers).length !== currentQuiz.questions.length || submitting}
             sx={{
               px: 5,
               py: 1.5,
@@ -349,7 +370,7 @@ const QuizPage = ({ user }) => {
               }
             }}
           >
-            🎯 Submit Quiz
+            {submitting ? 'Submitting...' : '🎯 Submit Quiz'}
           </Button>
         ) : (
           <Button

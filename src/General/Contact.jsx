@@ -173,7 +173,7 @@ const Contact = () => {
                   </Typography>
                   
                   {[
-                    { icon: Email, title: 'Email', info: 'chinnamart0107@gmail.com', color: '#FF6B6B' },
+                    { icon: Email, title: 'Email', info: 'codeathon2k26@gmail.com', color: '#FF6B6B' },
                     { icon: Phone, title: 'Phone', info: '+91 81798 60935', color: '#4ECDC4' },
                     { icon: LocationOn, title: 'Address', info: 'Annamacharya Institute Of Technology & Sciences - TIRUPATHI', color: '#45B7D1' }
                   ].map((item, index) => (
