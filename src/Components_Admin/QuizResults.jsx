@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, AppBar, Toolbar, Avatar, Button, Chip, Grid } from '@mui/material';
-import { ArrowBack, AdminPanelSettings, ExitToApp, EmojiEvents, TrendingUp, People, PictureAsPdf, TableChart } from '@mui/icons-material';
+import { Box, Typography, Container, Button, Avatar, Chip, Grid, CircularProgress } from '@mui/material';
+import { ArrowBack, AdminPanelSettings, ExitToApp, EmojiEvents, TrendingUp, People, PictureAsPdf, TableChart, Quiz } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../config/api';
+
+const Orb = ({ style }) => (
+  <motion.div animate={{ y: [-20, 20, -20], x: [-10, 10, -10] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+    style={{ position: 'absolute', borderRadius: '50%', filter: 'blur(60px)', opacity: 0.3, pointerEvents: 'none', ...style }} />
+);
+
+const glass = { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 4 };
 
 const QuizResults = ({ user }) => {
   const navigate = useNavigate();
@@ -14,658 +21,188 @@ const QuizResults = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminToken');
-    navigate('/');
-  };
+  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('adminToken'); navigate('/'); };
 
   useEffect(() => {
-    fetchQuizzes();
+    api.get('/api/users/quizzes').then(res => {
+      setQuizzes(res.data.filter((q, i, a) => i === a.findIndex(x => x.title === q.title)));
+    }).catch(() => {});
   }, []);
-
-  const fetchQuizzes = async () => {
-    try {
-      const response = await api.get('/api/users/quizzes');
-      const uniqueQuizzes = response.data.filter((quiz, index, self) => 
-        index === self.findIndex(q => q.title === quiz.title)
-      );
-      setQuizzes(uniqueQuizzes);
-    } catch (error) {
-      console.error('Failed to fetch quizzes:', error);
-    }
-  };
 
   const fetchQuizResults = async (quizId) => {
     setLoading(true);
     try {
-      const response = await api.get('/api/admin/results');
-      const results = response.data.filter(result => result.quiz_title === quizzes.find(q => q.id === quizId)?.title);
+      const res = await api.get('/api/admin/results');
+      const title = quizzes.find(q => q.id === quizId)?.title;
+      const results = res.data.filter(r => r.quiz_title === title);
       setQuizResults(results);
       setFilteredResults(results);
       setActiveFilter('all');
-    } catch (error) {
-      console.error('Failed to fetch quiz results:', error);
-      setQuizResults([]);
-      setFilteredResults([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setQuizResults([]); setFilteredResults([]); }
+    finally { setLoading(false); }
   };
 
-  const handleQuizSelect = (quiz) => {
-    setSelectedQuiz(quiz);
-    fetchQuizResults(quiz.id);
+  const handleQuizSelect = (quiz) => { setSelectedQuiz(quiz); fetchQuizResults(quiz.id); };
+
+  const getStats = () => {
+    if (!quizResults.length) return { totalAttempts: 0, avgScore: 0, passRate: 0 };
+    return {
+      totalAttempts: quizResults.length,
+      avgScore: Math.round(quizResults.reduce((s, r) => s + r.percentage, 0) / quizResults.length),
+      passRate: Math.round((quizResults.filter(r => r.percentage >= 70).length / quizResults.length) * 100),
+    };
   };
 
-  const getStatsForQuiz = (quizTitle) => {
-    const results = quizResults.filter(r => r.quiz_title === quizTitle);
-    if (results.length === 0) return { totalAttempts: 0, avgScore: 0, passRate: 0 };
-    
-    const totalAttempts = results.length;
-    const avgScore = Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / totalAttempts);
-    const passRate = Math.round((results.filter(r => r.percentage >= 70).length / totalAttempts) * 100);
-    
-    return { totalAttempts, avgScore, passRate };
-  };
-
-  const handleFilter = (filterType) => {
-    setActiveFilter(filterType);
-    let filtered = [...quizResults];
-    
-    switch (filterType) {
-      case 'excellent':
-        filtered = quizResults.filter(result => result.percentage >= 90);
-        break;
-      case 'good':
-        filtered = quizResults.filter(result => result.percentage >= 70 && result.percentage < 90);
-        break;
-      case 'average':
-        filtered = quizResults.filter(result => result.percentage >= 50 && result.percentage < 70);
-        break;
-      case 'poor':
-        filtered = quizResults.filter(result => result.percentage < 50);
-        break;
-      default:
-        filtered = quizResults;
-    }
-    
-    setFilteredResults(filtered);
+  const handleFilter = (f) => {
+    setActiveFilter(f);
+    const map = { excellent: r => r.percentage >= 90, good: r => r.percentage >= 70 && r.percentage < 90, average: r => r.percentage >= 50 && r.percentage < 70, poor: r => r.percentage < 50 };
+    setFilteredResults(f === 'all' ? quizResults : quizResults.filter(map[f]));
   };
 
   const exportToPDF = () => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Quiz Results - ${selectedQuiz.title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #333; text-align: center; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #667eea; color: white; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-            .stats { display: flex; justify-content: space-around; margin: 20px 0; }
-            .stat-card { text-align: center; padding: 15px; background: #f5f5f5; border-radius: 8px; }
-          </style>
-        </head>
-        <body>
-          <h1>Quiz Results Report</h1>
-          <h2>${selectedQuiz.title}</h2>
-          <div class="stats">
-            <div class="stat-card">
-              <h3>${getStatsForQuiz(selectedQuiz.title).totalAttempts}</h3>
-              <p>Total Attempts</p>
-            </div>
-            <div class="stat-card">
-              <h3>${getStatsForQuiz(selectedQuiz.title).avgScore}%</h3>
-              <p>Average Score</p>
-            </div>
-            <div class="stat-card">
-              <h3>${getStatsForQuiz(selectedQuiz.title).passRate}%</h3>
-              <p>Pass Rate</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Student Name</th>
-                <th>Email</th>
-                <th>Score</th>
-                <th>Percentage</th>
-                <th>Completed Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredResults.map(result => `
-                <tr>
-                  <td>${result.name}</td>
-                  <td>${result.email}</td>
-                  <td>${result.score}/${result.total_questions}</td>
-                  <td>${result.percentage}%</td>
-                  <td>${new Date(result.completed_at).toLocaleDateString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <p style="margin-top: 30px; text-align: center; color: #666;">
-            Generated on ${new Date().toLocaleDateString()} | Filter: ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}
-          </p>
-        </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.print();
+    const w = window.open('', '_blank');
+    w.document.write(`<html><head><title>Results - ${selectedQuiz.title}</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:10px}th{background:#667eea;color:white}</style></head><body><h1>${selectedQuiz.title} - Results</h1><table><thead><tr><th>Name</th><th>Email</th><th>Score</th><th>%</th><th>Date</th></tr></thead><tbody>${filteredResults.map(r => `<tr><td>${r.name}</td><td>${r.email}</td><td>${r.score}/${r.total_questions}</td><td>${r.percentage}%</td><td>${new Date(r.completed_at).toLocaleDateString()}</td></tr>`).join('')}</tbody></table></body></html>`);
+    w.document.close(); w.print();
   };
 
   const exportToExcel = () => {
-    const csvContent = [
-      ['Quiz Results Report'],
-      ['Quiz Title:', selectedQuiz.title],
-      ['Generated:', new Date().toLocaleDateString()],
-      ['Filter:', activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)],
-      [''],
-      ['Statistics'],
-      ['Total Attempts', getStatsForQuiz(selectedQuiz.title).totalAttempts],
-      ['Average Score', `${getStatsForQuiz(selectedQuiz.title).avgScore}%`],
-      ['Pass Rate', `${getStatsForQuiz(selectedQuiz.title).passRate}%`],
-      [''],
-      ['Student Name', 'Email', 'Score', 'Total Questions', 'Percentage', 'Completed Date'],
-      ...filteredResults.map(result => [
-        result.name,
-        result.email,
-        result.score,
-        result.total_questions,
-        `${result.percentage}%`,
-        new Date(result.completed_at).toLocaleDateString()
-      ])
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `quiz-results-${selectedQuiz.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = ['Name,Email,Score,Total,Percentage,Date', ...filteredResults.map(r => `${r.name},${r.email},${r.score},${r.total_questions},${r.percentage}%,${new Date(r.completed_at).toLocaleDateString()}`)].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `results-${selectedQuiz.title.replace(/\s+/g, '-')}.csv`;
+    a.click();
   };
 
-  return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        zIndex: 0
-      }
-    }}>
-      <AppBar position="static" sx={{ 
-        background: 'rgba(255, 255, 255, 0.1)', 
-        backdropFilter: 'blur(20px)', 
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        zIndex: 1
-      }} elevation={0}>
-        <Toolbar sx={{ py: 1 }}>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
-              startIcon={<ArrowBack />} 
-              onClick={() => navigate('/admin')} 
-              sx={{ 
-                color: 'white', 
-                mr: 2,
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 3,
-                px: 3,
-                '&:hover': { background: 'rgba(255, 255, 255, 0.2)' }
-              }}
-            >
-              Back to Dashboard
-            </Button>
-          </motion.div>
-          <Typography variant="h5" sx={{ 
-            flexGrow: 1, 
-            color: 'white', 
-            fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #fff, #e3f2fd)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            📊 Quiz Results Analytics
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ 
-              bgcolor: 'rgba(255, 255, 255, 0.2)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <AdminPanelSettings sx={{ color: 'white' }} />
-            </Avatar>
-            <Typography sx={{ color: 'white', fontWeight: 500 }}>{user?.name}</Typography>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button 
-                color="inherit" 
-                onClick={handleLogout} 
-                startIcon={<ExitToApp />}
-                sx={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: 3,
-                  px: 3,
-                  '&:hover': { background: 'rgba(255, 255, 255, 0.2)' }
-                }}
-              >
-                Logout
-              </Button>
-            </motion.div>
-          </Box>
-        </Toolbar>
-      </AppBar>
+  const stats = getStats();
+  const scoreColor = (p) => p >= 80 ? '#4CAF50' : p >= 60 ? '#FF9800' : '#f44336';
 
-      <Box sx={{ p: 4, position: 'relative', zIndex: 1 }}>
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Typography 
-              variant="h3" 
-              sx={{ 
-                color: 'white', 
-                mb: 2, 
-                fontWeight: 'bold',
-                textShadow: '0 4px 20px rgba(0,0,0,0.3)'
-              }}
-            >
-              Quiz Performance Dashboard 📈
-            </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.8)', 
-                fontWeight: 300,
-                maxWidth: 600,
-                mx: 'auto'
-              }}
-            >
-              Monitor student performance and track quiz analytics
-            </Typography>
+  return (
+    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a0533 0%, #3d0c6e 40%, #6b1a1a 100%)', position: 'relative', overflow: 'hidden' }}>
+      <Orb style={{ width: 400, height: 400, background: '#ff6b6b', top: '-10%', left: '-10%' }} />
+      <Orb style={{ width: 350, height: 350, background: '#764ba2', top: '30%', right: '-8%' }} />
+      <Orb style={{ width: 300, height: 300, background: '#ee5a24', bottom: '-5%', left: '30%' }} />
+
+      {/* Navbar */}
+      <Box sx={{ ...glass, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', px: { xs: 2, md: 4 }, py: 1.5, position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate('/admin')} sx={{ color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 2, px: 2, '&:hover': { background: 'rgba(255,255,255,0.1)', color: 'white' } }}>Back</Button>
+        <Typography sx={{ fontWeight: 800, fontSize: 20, color: 'white', flexGrow: 1, textAlign: 'center' }}>📊 Quiz Results</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', width: 36, height: 36 }}><AdminPanelSettings sx={{ color: 'white', fontSize: 18 }} /></Avatar>
+          <Button onClick={handleLogout} startIcon={<ExitToApp />} sx={{ color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 2, px: 2, '&:hover': { background: 'rgba(255,255,255,0.1)', color: 'white' } }}>Logout</Button>
+        </Box>
+      </Box>
+
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 5 } }}>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography variant="h3" sx={{ fontWeight: 800, color: 'white', mb: 1, fontSize: { xs: '1.8rem', md: '2.5rem' } }}>Performance Dashboard 📈</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.6)' }}>Monitor student performance and track quiz analytics</Typography>
           </Box>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <Card sx={{ 
-            mb: 4, 
-            background: 'rgba(255, 255, 255, 0.95)', 
-            backdropFilter: 'blur(20px)', 
-            borderRadius: 5,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.3)'
-          }}>
-            <CardContent sx={{ p: 4 }}>
-              <Typography variant="h5" sx={{ 
-                mb: 3, 
-                color: '#333', 
-                fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                📚 Select Quiz to Analyze
-              </Typography>
-              <Grid container spacing={2}>
-                {quizzes.map((quiz) => (
-                  <Grid item xs={12} sm={6} md={4} key={quiz.id}>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Button
-                        fullWidth
-                        variant={selectedQuiz?.id === quiz.id ? 'contained' : 'outlined'}
-                        onClick={() => handleQuizSelect(quiz)}
-                        sx={{
-                          px: 3,
-                          py: 2,
-                          borderRadius: 3,
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          textTransform: 'none',
-                          ...(selectedQuiz?.id === quiz.id ? {
-                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                            boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-                            '&:hover': { 
-                              background: 'linear-gradient(135deg, #5a67d8, #6b46c1)',
-                              boxShadow: '0 12px 35px rgba(102, 126, 234, 0.4)'
-                            }
-                          } : {
-                            borderColor: '#667eea',
-                            color: '#667eea',
-                            '&:hover': {
-                              borderColor: '#5a67d8',
-                              background: 'rgba(102, 126, 234, 0.1)'
-                            }
-                          })
-                        }}
-                      >
-                        {quiz.title}
-                      </Button>
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
+        {/* Quiz selector */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Box sx={{ ...glass, p: 3, mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+              <Box sx={{ width: 4, height: 24, borderRadius: 2, background: 'linear-gradient(180deg, #ff6b6b, #ee5a24)' }} />
+              <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 16 }}>Select Quiz to Analyze</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              {quizzes.map(quiz => (
+                <motion.div key={quiz.id} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+                  <Button onClick={() => handleQuizSelect(quiz)}
+                    sx={{ px: 2.5, py: 1, borderRadius: 2, fontWeight: 600, fontSize: 13, background: selectedQuiz?.id === quiz.id ? 'linear-gradient(135deg, #ff6b6b, #ee5a24)' : 'rgba(255,255,255,0.1)', color: 'white', border: selectedQuiz?.id === quiz.id ? 'none' : '1px solid rgba(255,255,255,0.2)', boxShadow: selectedQuiz?.id === quiz.id ? '0 4px 20px rgba(255,107,107,0.4)' : 'none', '&:hover': { background: selectedQuiz?.id === quiz.id ? 'linear-gradient(135deg, #ff5252, #d84315)' : 'rgba(255,255,255,0.18)' } }}>
+                    {quiz.title}
+                  </Button>
+                </motion.div>
+              ))}
+            </Box>
+          </Box>
         </motion.div>
 
         {selectedQuiz && (
           <>
-            {/* Stats Cards */}
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-              <Grid container spacing={4} sx={{ mb: 4 }}>
-                {[
-                  { 
-                    label: 'Total Attempts', 
-                    value: getStatsForQuiz(selectedQuiz.title).totalAttempts, 
-                    icon: People,
-                    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                  },
-                  { 
-                    label: 'Average Score', 
-                    value: `${getStatsForQuiz(selectedQuiz.title).avgScore}%`, 
-                    icon: TrendingUp,
-                    gradient: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)'
-                  },
-                  { 
-                    label: 'Pass Rate', 
-                    value: `${getStatsForQuiz(selectedQuiz.title).passRate}%`, 
-                    icon: EmojiEvents,
-                    gradient: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
-                  }
-                ].map((stat, idx) => (
-                  <Grid item xs={12} md={4} key={idx}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.3 + idx * 0.1 }}
-                      whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                    >
-                      <Card sx={{ 
-                        background: 'rgba(255,255,255,0.95)', 
-                        backdropFilter: 'blur(20px)', 
-                        textAlign: 'center', 
-                        borderRadius: 5, 
-                        p: 3, 
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&::before': {
-                          content: '""',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: '4px',
-                          background: stat.gradient
-                        }
-                      }}>
-                        <CardContent>
-                          <Box sx={{ 
-                            width: 70, 
-                            height: 70, 
-                            borderRadius: '50%', 
-                            background: stat.gradient,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mx: 'auto',
-                            mb: 2,
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.2)'
-                          }}>
-                            <stat.icon sx={{ fontSize: 35, color: 'white' }} />
-                          </Box>
-                          <Typography variant="h3" sx={{ 
-                            fontWeight: 'bold', 
-                            color: '#333',
-                            mb: 1,
-                            background: stat.gradient,
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                          }}>
-                            {stat.value}
-                          </Typography>
-                          <Typography sx={{ color: '#666', fontWeight: 500, fontSize: '1.1rem' }}>
-                            {stat.label}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
-            </motion.div>
+            {/* Stats */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {[
+                { label: 'Total Attempts', value: stats.totalAttempts, icon: People, color: '#667eea' },
+                { label: 'Average Score', value: `${stats.avgScore}%`, icon: TrendingUp, color: '#FF9800' },
+                { label: 'Pass Rate', value: `${stats.passRate}%`, icon: EmojiEvents, color: '#4CAF50' },
+              ].map((s, i) => (
+                <Grid item xs={12} sm={4} key={i}>
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} whileHover={{ y: -6 }}>
+                    <Box sx={{ ...glass, p: 3, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${s.color}, ${s.color}88)` }} />
+                      <Box sx={{ width: 48, height: 48, borderRadius: '50%', background: `${s.color}20`, border: `2px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1.5 }}>
+                        <s.icon sx={{ color: s.color, fontSize: 24 }} />
+                      </Box>
+                      <Typography sx={{ fontSize: 30, fontWeight: 800, color: 'white' }}>{s.value}</Typography>
+                      <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>{s.label}</Typography>
+                    </Box>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
 
-            {/* Results Table */}
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
-              <Card sx={{ 
-                background: 'rgba(255, 255, 255, 0.95)', 
-                backdropFilter: 'blur(20px)', 
-                borderRadius: 5,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.3)'
-              }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                    <Typography variant="h5" sx={{ 
-                      color: '#333', 
-                      fontWeight: 'bold',
-                      background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
-                    }}>
-                      📋 Detailed Results: {selectedQuiz.title}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {/* Filter Buttons */}
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {[
-                          { key: 'all', label: 'All', color: '#667eea' },
-                          { key: 'excellent', label: 'Excellent (90%+)', color: '#4CAF50' },
-                          { key: 'good', label: 'Good (70-89%)', color: '#2196F3' },
-                          { key: 'average', label: 'Average (50-69%)', color: '#FF9800' },
-                          { key: 'poor', label: 'Poor (<50%)', color: '#f44336' }
-                        ].map((filter) => (
-                          <Button
-                            key={filter.key}
-                            size="small"
-                            variant={activeFilter === filter.key ? 'contained' : 'outlined'}
-                            onClick={() => handleFilter(filter.key)}
-                            sx={{
-                              borderRadius: 3,
-                              px: 2,
-                              py: 0.5,
-                              fontSize: '0.8rem',
-                              textTransform: 'none',
-                              ...(activeFilter === filter.key ? {
-                                background: filter.color,
-                                color: 'white',
-                                '&:hover': { background: filter.color }
-                              } : {
-                                borderColor: filter.color,
-                                color: filter.color,
-                                '&:hover': {
-                                  borderColor: filter.color,
-                                  background: `${filter.color}10`
-                                }
-                              })
-                            }}
-                          >
-                            {filter.label}
-                          </Button>
-                        ))}
-                      </Box>
-                      
-                      {/* Export Buttons */}
-                      <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          startIcon={<PictureAsPdf />}
-                          onClick={exportToPDF}
-                          sx={{
-                            background: 'linear-gradient(135deg, #f44336, #d32f2f)',
-                            borderRadius: 3,
-                            px: 2,
-                            py: 0.5,
-                            fontSize: '0.8rem',
-                            textTransform: 'none',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #d32f2f, #c62828)'
-                            }
-                          }}
-                        >
-                          PDF
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          startIcon={<TableChart />}
-                          onClick={exportToExcel}
-                          sx={{
-                            background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-                            borderRadius: 3,
-                            px: 2,
-                            py: 0.5,
-                            fontSize: '0.8rem',
-                            textTransform: 'none',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #45a049, #388e3c)'
-                            }
-                          }}
-                        >
-                          Excel
-                        </Button>
-                      </Box>
-                    </Box>
+            {/* Results table */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <Box sx={{ ...glass, p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                  <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 16 }}>Results: {selectedQuiz.title}</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {[{ key: 'all', label: 'All', color: '#667eea' }, { key: 'excellent', label: '90%+', color: '#4CAF50' }, { key: 'good', label: '70-89%', color: '#2196F3' }, { key: 'average', label: '50-69%', color: '#FF9800' }, { key: 'poor', label: '<50%', color: '#f44336' }].map(f => (
+                      <Button key={f.key} size="small" onClick={() => handleFilter(f.key)}
+                        sx={{ borderRadius: 2, px: 1.5, py: 0.5, fontSize: 12, fontWeight: 600, background: activeFilter === f.key ? f.color : 'rgba(255,255,255,0.08)', color: activeFilter === f.key ? 'white' : 'rgba(255,255,255,0.6)', border: `1px solid ${activeFilter === f.key ? f.color : 'rgba(255,255,255,0.15)'}`, '&:hover': { background: `${f.color}30`, color: 'white' } }}>
+                        {f.label}
+                      </Button>
+                    ))}
+                    <Button size="small" startIcon={<PictureAsPdf sx={{ fontSize: 14 }} />} onClick={exportToPDF} sx={{ borderRadius: 2, px: 1.5, py: 0.5, fontSize: 12, background: 'rgba(244,67,54,0.2)', color: '#f44336', border: '1px solid rgba(244,67,54,0.3)', '&:hover': { background: 'rgba(244,67,54,0.35)' } }}>PDF</Button>
+                    <Button size="small" startIcon={<TableChart sx={{ fontSize: 14 }} />} onClick={exportToExcel} sx={{ borderRadius: 2, px: 1.5, py: 0.5, fontSize: 12, background: 'rgba(76,175,80,0.2)', color: '#4CAF50', border: '1px solid rgba(76,175,80,0.3)', '&:hover': { background: 'rgba(76,175,80,0.35)' } }}>CSV</Button>
                   </Box>
-                
-                  {loading ? (
-                    <Box sx={{ textAlign: 'center', py: 8 }}>
-                      <Typography variant="h6" sx={{ color: '#666' }}>Loading results...</Typography>
+                </Box>
+
+                {loading ? (
+                  <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress sx={{ color: '#ff6b6b' }} /></Box>
+                ) : filteredResults.length > 0 ? (
+                  <>
+                    {/* Table header */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto auto', gap: 2, px: 2, py: 1.5, background: 'rgba(255,107,107,0.15)', borderRadius: 2, mb: 1 }}>
+                      {['Student', 'Email', 'Score', 'Grade', 'Date'].map((h, i) => (
+                        <Typography key={i} sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: 12, textAlign: i > 1 ? 'center' : 'left' }}>{h}</Typography>
+                      ))}
                     </Box>
-                  ) : filteredResults.length > 0 ? (
-                    <TableContainer sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                      <Table>
-                        <TableHead>
-                          <TableRow sx={{ 
-                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                            '& .MuiTableCell-head': {
-                              color: 'white',
-                              fontWeight: 'bold',
-                              fontSize: '1rem'
-                            }
-                          }}>
-                            <TableCell>👤 Student Name</TableCell>
-                            <TableCell>📧 Email</TableCell>
-                            <TableCell align="center">📊 Score</TableCell>
-                            <TableCell align="center">🎯 Grade</TableCell>
-                            <TableCell align="center">📅 Completed</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {filteredResults.map((result, index) => (
-                            <motion.tr
-                              key={index}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                              component={TableRow}
-                              sx={{ 
-                                '&:nth-of-type(odd)': { backgroundColor: 'rgba(102, 126, 234, 0.05)' },
-                                '&:hover': { 
-                                  backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                                  transform: 'scale(1.01)',
-                                  transition: 'all 0.2s ease'
-                                }
-                              }}
-                            >
-                              <TableCell sx={{ fontWeight: 600 }}>{result.name}</TableCell>
-                              <TableCell sx={{ color: '#666' }}>{result.email}</TableCell>
-                              <TableCell align="center">
-                                <Typography sx={{ fontWeight: 600 }}>
-                                  {result.score}/{result.total_questions}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center">
-                                <Chip
-                                  label={`${result.percentage}%`}
-                                  sx={{
-                                    background: result.percentage >= 80 ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 
-                                               result.percentage >= 60 ? 'linear-gradient(135deg, #FF9800, #F57C00)' : 
-                                               'linear-gradient(135deg, #f44336, #d32f2f)',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem',
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell align="center" sx={{ color: '#666' }}>
-                                {new Date(result.completed_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  ) : (
-                    <Box sx={{ 
-                      textAlign: 'center', 
-                      py: 8,
-                      background: 'linear-gradient(135deg, #f8f9ff, #e3f2fd)',
-                      borderRadius: 3,
-                      border: '2px dashed #667eea'
-                    }}>
-                      <EmojiEvents sx={{ fontSize: 60, color: '#667eea', mb: 2, opacity: 0.7 }} />
-                      <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
-                        {activeFilter === 'all' ? 'No Results Available' : `No ${activeFilter} results found`}
-                      </Typography>
-                      <Typography sx={{ color: '#999' }}>
-                        {activeFilter === 'all' ? 'No students have taken this quiz yet' : 'Try adjusting the filter criteria'}
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+                    {filteredResults.map((r, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto auto', gap: 2, px: 2, py: 1.5, borderRadius: 2, mb: 0.5, background: i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent', '&:hover': { background: 'rgba(255,255,255,0.08)' }, transition: 'all 0.2s', alignItems: 'center' }}>
+                          <Typography sx={{ color: 'white', fontWeight: 600, fontSize: 13 }}>{r.name}</Typography>
+                          <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email}</Typography>
+                          <Typography sx={{ color: 'white', fontWeight: 600, fontSize: 13, textAlign: 'center' }}>{r.score}/{r.total_questions}</Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Chip label={`${r.percentage}%`} size="small" sx={{ background: `${scoreColor(r.percentage)}25`, color: scoreColor(r.percentage), border: `1px solid ${scoreColor(r.percentage)}50`, fontWeight: 700, fontSize: 12 }} />
+                          </Box>
+                          <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>{new Date(r.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography>
+                        </Box>
+                      </motion.div>
+                    ))}
+                  </>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 6 }}>
+                    <EmojiEvents sx={{ fontSize: 48, color: 'rgba(255,255,255,0.2)', mb: 1 }} />
+                    <Typography sx={{ color: 'rgba(255,255,255,0.4)' }}>{activeFilter === 'all' ? 'No results yet' : `No ${activeFilter} results`}</Typography>
+                  </Box>
+                )}
+              </Box>
             </motion.div>
           </>
         )}
-      </Box>
+
+        {!selectedQuiz && (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Quiz sx={{ fontSize: 64, color: 'rgba(255,255,255,0.15)', mb: 2 }} />
+            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>Select a quiz above to view results</Typography>
+          </Box>
+        )}
+      </Container>
     </Box>
   );
 };

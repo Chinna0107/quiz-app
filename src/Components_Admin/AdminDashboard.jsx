@@ -1,365 +1,268 @@
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Card, CardContent, Grid, Button, AppBar, Toolbar, Avatar, Chip, IconButton, LinearProgress, Divider } from '@mui/material';
-import { Dashboard, People, Quiz, Add, ExitToApp, AdminPanelSettings, TrendingUp, Analytics, Star, Notifications, Settings } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Box, Typography, Container, Button, Avatar, Grid, Chip, Divider, LinearProgress } from '@mui/material';
+import { People, Quiz, Add, ExitToApp, AdminPanelSettings, TrendingUp, Analytics, BarChart } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import api from '../config/api';
 import { useCache } from '../hooks/useCache';
-// import QuizResultsTable from './AdminResults';  // ⬅ NEW IMPORT
 
+/* ─── Shared styles ─────────────────────────────────────────── */
+const BG = 'linear-gradient(135deg, #1a0533 0%, #3d0c6e 45%, #6b1a1a 100%)';
+
+const glass = {
+  background: 'rgba(255,255,255,0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 3,
+};
+
+/* ─── Animated background orb ───────────────────────────────── */
+const Orb = ({ style }) => (
+  <motion.div
+    animate={{ y: [-25, 25, -25], x: [-15, 15, -15] }}
+    transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+    style={{ position: 'absolute', borderRadius: '50%', filter: 'blur(70px)', opacity: 0.3, pointerEvents: 'none', ...style }}
+  />
+);
+
+/* ─── Section header ─────────────────────────────────────────── */
+const SectionHeader = ({ label, accentColor = '#ff6b6b' }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
+    <Box sx={{ width: 4, height: 22, borderRadius: 2, background: accentColor }} />
+    <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 17, letterSpacing: 0.3 }}>{label}</Typography>
+  </Box>
+);
+
+/* ─── Stat card ──────────────────────────────────────────────── */
+const StatCard = ({ label, value, icon: Icon, color, clickable, onClick, loading, delay }) => (
+  <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }} whileHover={{ y: -6 }}>
+    <Box
+      onClick={clickable ? onClick : undefined}
+      sx={{
+        ...glass, p: 3, textAlign: 'center', position: 'relative', overflow: 'hidden',
+        cursor: clickable ? 'pointer' : 'default',
+        transition: 'all 0.25s',
+        '&:hover': clickable ? { background: 'rgba(255,255,255,0.12)', border: `1px solid ${color}55` } : {},
+      }}
+    >
+      {/* top accent */}
+      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, ${color}66)` }} />
+
+      <Box sx={{ width: 56, height: 56, borderRadius: '50%', background: `${color}18`, border: `2px solid ${color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+        <Icon sx={{ color, fontSize: 28 }} />
+      </Box>
+
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: delay + 0.3, type: 'spring', stiffness: 180 }}>
+        <Typography sx={{ fontSize: 38, fontWeight: 900, color: 'white', lineHeight: 1 }}>
+          {loading ? <Box component="span" sx={{ opacity: 0.4 }}>—</Box> : value}
+        </Typography>
+      </motion.div>
+
+      <Typography sx={{ color: 'rgba(255,255,255,0.45)', mt: 0.8, fontSize: 13, fontWeight: 500 }}>{label}</Typography>
+
+      {loading && (
+        <LinearProgress sx={{ mt: 1.5, height: 2, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.08)', '& .MuiLinearProgress-bar': { background: color } }} />
+      )}
+    </Box>
+  </motion.div>
+);
+
+/* ─── Action row ─────────────────────────────────────────────── */
+const ActionRow = ({ label, desc, icon: Icon, gradient, color, onClick, delay }) => (
+  <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
+    <Box
+      onClick={onClick}
+      sx={{
+        display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2,
+        cursor: 'pointer', background: `${color}12`, border: `1px solid ${color}28`,
+        transition: 'all 0.2s',
+        '&:hover': { background: `${color}22`, border: `1px solid ${color}55` },
+      }}
+    >
+      <Box sx={{ width: 42, height: 42, borderRadius: 2, background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 14px ${color}45` }}>
+        <Icon sx={{ color: 'white', fontSize: 20 }} />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 14, lineHeight: 1.3 }}>{label}</Typography>
+        <Typography sx={{ color: 'rgba(255,255,255,0.38)', fontSize: 12, mt: 0.2 }}>{desc}</Typography>
+      </Box>
+      <Box sx={{ width: 6, height: 6, borderRadius: '50%', background: color, opacity: 0.7 }} />
+    </Box>
+  </motion.div>
+);
+
+/* ─── Activity row ───────────────────────────────────────────── */
+const ActivityRow = ({ text, time, color, icon: Icon, delay }) => (
+  <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} whileHover={{ x: 4 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.8, borderRadius: 2, background: `${color}0d`, border: `1px solid ${color}1a`, position: 'relative', overflow: 'hidden' }}>
+      <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
+      <Box sx={{ width: 34, height: 34, borderRadius: '50%', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon sx={{ color, fontSize: 17 }} />
+      </Box>
+      <Box sx={{ flex: 1 }}>
+        <Typography sx={{ color: 'white', fontWeight: 600, fontSize: 13 }}>{text}</Typography>
+        <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, mt: 0.2 }}>System notification</Typography>
+      </Box>
+      <Chip label={time} size="small" sx={{ background: `${color}18`, color, border: `1px solid ${color}30`, fontWeight: 600, fontSize: 10, height: 20 }} />
+    </Box>
+  </motion.div>
+);
+
+/* ═══════════════════════════════════════════════════════════════
+   Main Component
+═══════════════════════════════════════════════════════════════ */
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
-  
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('adminToken');
     navigate('/');
   };
 
-  const { data: stats, loading } = useCache(
-    'admin-stats',
-    async () => {
-      const response = await api.get('/api/users/stats');
-      return response.data;
-    }
-  );
+  const { data: stats, loading } = useCache('admin-stats', async () => {
+    const res = await api.get('/api/users/stats');
+    return res.data;
+  });
 
   const statsData = stats || { totalUsers: 0, totalQuizzes: 0, totalSubmissions: 0 };
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff6b6b 100%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Floating Background Elements */}
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 0 }}>
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              y: [-20, -100, -20],
-              x: [-20, 20, -20],
-              rotate: [0, 180, 360],
-            }}
-            transition={{
-              duration: 10 + i * 2,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              position: 'absolute',
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: 60 + i * 20,
-              height: 60 + i * 20,
-              background: `rgba(255,255,255,${0.05 + i * 0.02})`,
-              borderRadius: '50%',
-              filter: 'blur(1px)'
-            }}
-          />
-        ))}
-      </Box>
-      
-      <AppBar position="static" sx={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', zIndex: 10 }} elevation={0}>
-        <Toolbar sx={{ py: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar 
-              sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 45, height: 45, cursor: 'pointer' }}
-              onClick={() => navigate('/admin/profile')}
-            >
-              <AdminPanelSettings sx={{ fontSize: 24 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', fontSize: '1.3rem' }}>Admin Dashboard</Typography>
-              <Chip label="Administrator" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '0.75rem' }} />
-            </Box>
-          </Box>
-          <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-              <Notifications />
-            </IconButton>
-            <IconButton sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-              <Settings />
-            </IconButton>
-            <Typography sx={{ color: 'white', fontWeight: 500 }}>Welcome, {user?.name}</Typography>
-            <IconButton onClick={handleLogout} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-              <ExitToApp />
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: '100vh', background: BG, position: 'relative', overflow: 'hidden' }}>
 
-      <Box sx={{ p: { xs: 1, sm: 2, md: 4 }, position: 'relative', zIndex: 1 }}>
-        <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          <Typography variant="h3" sx={{ color: 'white', mb: 1, textAlign: 'center', fontWeight: 'bold', textShadow: '0 2px 10px rgba(0,0,0,0.3)', fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' } }}>
-            Dashboard Overview
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 5, textAlign: 'center' }}>
-            Manage your quiz platform with ease
-          </Typography>
+      {/* ── Background orbs ── */}
+      <Orb style={{ width: 480, height: 480, background: '#ff6b6b', top: '-14%', left: '-12%' }} />
+      <Orb style={{ width: 380, height: 380, background: '#764ba2', top: '38%', right: '-9%' }} />
+      <Orb style={{ width: 300, height: 300, background: '#ee5a24', bottom: '-8%', left: '34%' }} />
+
+      {/* ── Navbar ── */}
+      <Box sx={{
+        ...glass, borderRadius: 0,
+        borderLeft: 'none', borderRight: 'none', borderTop: 'none',
+        px: { xs: 2, md: 5 }, py: 1.5,
+        position: 'relative', zIndex: 10,
+        display: 'flex', alignItems: 'center', gap: 2,
+      }}>
+        {/* Brand */}
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Avatar
+            onClick={() => navigate('/admin/profile')}
+            sx={{ bgcolor: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.25)', cursor: 'pointer', width: 40, height: 40 }}
+          >
+            <AdminPanelSettings sx={{ color: 'white', fontSize: 20 }} />
+          </Avatar>
         </motion.div>
 
-        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center" sx={{ mb: { xs: 3, md: 5 }, maxWidth: '1100px', mx: 'auto' }}>
+        <Box>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 17, lineHeight: 1.1 }}>Admin Dashboard</Typography>
+          <Chip label="Administrator" size="small" sx={{ height: 16, fontSize: 9, mt: 0.3, background: 'rgba(255,107,107,0.25)', color: '#ff8a80', border: '1px solid rgba(255,107,107,0.35)' }} />
+        </Box>
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, display: { xs: 'none', md: 'block' } }}>
+          Welcome back, <strong style={{ color: 'white' }}>{user?.name}</strong>
+        </Typography>
+
+        <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255,255,255,0.1)', mx: 1 }} />
+
+        <Button
+          onClick={handleLogout}
+          startIcon={<ExitToApp sx={{ fontSize: 16 }} />}
+          size="small"
+          sx={{ color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 2, px: 2, fontSize: 13, '&:hover': { background: 'rgba(255,255,255,0.09)', color: 'white' } }}
+        >
+          Logout
+        </Button>
+      </Box>
+
+      {/* ── Page body ── */}
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 5 } }}>
+
+        {/* ── Page title ── */}
+        <motion.div initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+          <Box sx={{ mb: 5 }}>
+            <Typography variant="h3" sx={{ fontWeight: 900, color: 'white', fontSize: { xs: '1.7rem', md: '2.6rem' }, letterSpacing: '-0.5px', mb: 0.5 }}>
+              Dashboard Overview
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 15 }}>
+              Monitor your platform stats and manage everything from here.
+            </Typography>
+          </Box>
+        </motion.div>
+
+        {/* ── Stats row ── */}
+        <Box sx={{ mb: 1 }}>
+          <SectionHeader label="Platform Statistics" accentColor="#ff6b6b" />
+        </Box>
+        <Grid container spacing={2.5} sx={{ mb: 5 }}>
           {[
-            { label: "Total Users", value: statsData.totalUsers, icon: People, color: "#ff6b6b", gradient: "linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)", trend: "+12%" },
-            { label: "Active Quizzes", value: statsData.totalQuizzes, icon: Quiz, color: "#667eea", gradient: "linear-gradient(135deg, #667eea 0%, #8a9bff 100%)", trend: "+8%", clickable: true, action: () => navigate('/admin/quiz-preview') },
-            { label: "Total Submissions", value: statsData.totalSubmissions, icon: TrendingUp, color: "#28a745", gradient: "linear-gradient(135deg, #28a745 0%, #4caf50 100%)", trend: "+23%" },
-          ].map((item, index) => (
-            <Grid item xs={12} sm={6} md={6} lg={4} key={index}>
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: index * 0.2, duration: 0.6 }}
-                whileHover={{ y: -10, transition: { duration: 0.3 } }}
-              >
-                <Card 
-                  onClick={item.clickable ? item.action : undefined}
-                  sx={{ 
-                    background: 'rgba(255,255,255,0.95)', 
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: 4,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    cursor: item.clickable ? 'pointer' : 'default',
-                    '&:hover': item.clickable ? {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 25px 50px rgba(0,0,0,0.15)'
-                    } : {}
-                  }}>
-                  <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: item.gradient }} />
-                  <CardContent sx={{ textAlign: 'center', py: { xs: 3, md: 5 }, px: { xs: 3, md: 5 } }}>
-                    <Box sx={{ 
-                      background: item.gradient, 
-                      borderRadius: '50%', 
-                      width: 80, 
-                      height: 80, 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      mx: 'auto',
-                      mb: 2,
-                      boxShadow: `0 10px 30px ${item.color}40`
-                    }}>
-                      <item.icon sx={{ fontSize: 40, color: 'white' }} />
-                    </Box>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: index * 0.3 + 0.5, type: "spring", stiffness: 200 }}
-                    >
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#333', mb: 1 }}>{loading ? '...' : item.value}</Typography>
-                    </motion.div>
-                    <Typography variant="body1" sx={{ color: '#666', mb: 2 }}>{item.label}</Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={75 + index * 5} 
-                      sx={{ 
-                        mb: 2, 
-                        height: 6, 
-                        borderRadius: 3,
-                        bgcolor: 'rgba(0,0,0,0.1)',
-                        '& .MuiLinearProgress-bar': {
-                          background: item.gradient,
-                          borderRadius: 3
-                        }
-                      }} 
-                    />
-                    <Chip 
-                      icon={<Star sx={{ fontSize: 16 }} />}
-                      label={item.trend} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#e8f5e8', 
-                        color: '#28a745',
-                        fontWeight: 'bold',
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
-                    />
-                  </CardContent>
-                </Card>
-              </motion.div>
+            { label: 'Total Users', value: statsData.totalUsers, icon: People, color: '#ff6b6b', delay: 0.05 },
+            { label: 'Active Quizzes', value: statsData.totalQuizzes, icon: Quiz, color: '#667eea', clickable: true, onClick: () => navigate('/admin/quiz-preview'), delay: 0.12 },
+            { label: 'Total Submissions', value: statsData.totalSubmissions, icon: TrendingUp, color: '#28a745', delay: 0.19 },
+          ].map((s, i) => (
+            <Grid item xs={12} sm={4} key={i}>
+              <StatCard {...s} loading={loading} />
             </Grid>
           ))}
         </Grid>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-        >
-          <Divider sx={{ mb: 4, bgcolor: 'rgba(255,255,255,0.3)', height: 2 }} />
-        </motion.div>
+        {/* ── Quick Actions + Recent Activity ── */}
+        <Grid container spacing={3} alignItems="stretch">
 
-        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1200px', mx: 'auto' }}>
+          {/* Quick Actions */}
           <Grid item xs={12} md={6}>
-            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6, duration: 0.8 }}>
-              <Card sx={{ 
-                background: 'rgba(255,255,255,0.95)', 
-                backdropFilter: 'blur(20px)',
-                borderRadius: 4,
-                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ mb: 3, color: '#333', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Dashboard sx={{ color: '#ff6b6b' }} />
-                    Quick Actions
-                  </Typography>
-
-                  <AnimatePresence>
-                    {[
-                      { label: 'Create New Quiz', icon: Add, action: () => navigate('/admin/create-quiz'), gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24)', desc: 'Build engaging quizzes' },
-                      { label: 'View Quiz Results', icon: Analytics, action: () => navigate('/admin/results'), gradient: 'linear-gradient(135deg, #667eea, #764ba2)', desc: 'Analyze performance data' },
-                      { label: 'Manage Users', icon: People, action: () => navigate('/admin/users'), gradient: 'linear-gradient(135deg, #28a745, #20c997)', desc: 'Control user access' }
-                    ].map((btn, index) => (
-                      <motion.div 
-                        key={index} 
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1.4 + index * 0.2 }}
-                        whileHover={{ 
-                          scale: 1.03,
-                          rotateY: 5,
-                          transition: { duration: 0.2 }
-                        }} 
-                        whileTap={{ scale: 0.97 }}
-                      >
-                        <Card sx={{
-                          mb: 2,
-                          background: btn.gradient,
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                          cursor: 'pointer',
-                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                          '&:hover': {
-                            boxShadow: '0 15px 40px rgba(0,0,0,0.25)'
-                          }
-                        }} onClick={btn.action}>
-                          <CardContent sx={{ p: 3, color: 'white' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                              <btn.icon sx={{ fontSize: 28 }} />
-                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{btn.label}</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ opacity: 0.9 }}>{btn.desc}</Typography>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+            <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.28 }} style={{ height: '100%' }}>
+              <Box sx={{ ...glass, p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <SectionHeader label="Quick Actions" accentColor="#ff6b6b" />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flex: 1 }}>
+                  {[
+                    { label: 'Create New Quiz', desc: 'Build and publish a new quiz', icon: Add, gradient: 'linear-gradient(135deg,#ff6b6b,#ee5a24)', color: '#ff6b6b', onClick: () => navigate('/admin/create-quiz'), delay: 0.35 },
+                    { label: 'View Quiz Results', desc: 'Analyze student performance', icon: Analytics, gradient: 'linear-gradient(135deg,#667eea,#764ba2)', color: '#667eea', onClick: () => navigate('/admin/results'), delay: 0.42 },
+                    { label: 'Manage Users', desc: 'Control user access & status', icon: People, gradient: 'linear-gradient(135deg,#28a745,#20c997)', color: '#28a745', onClick: () => navigate('/admin/users'), delay: 0.49 },
+                    { label: 'Quiz Preview', desc: 'Preview all available quizzes', icon: BarChart, gradient: 'linear-gradient(135deg,#FF9800,#F57C00)', color: '#FF9800', onClick: () => navigate('/admin/quiz-preview'), delay: 0.56 },
+                  ].map((a, i) => <ActionRow key={i} {...a} />)}
+                </Box>
+              </Box>
             </motion.div>
           </Grid>
 
+          {/* Recent Activity */}
           <Grid item xs={12} md={6}>
-            <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8, duration: 0.8 }}>
-              <Card sx={{ 
-                background: 'rgba(255,255,255,0.95)', 
-                backdropFilter: 'blur(20px)',
-                borderRadius: 4,
-                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ mb: 3, color: '#333', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TrendingUp sx={{ color: '#28a745' }} />
-                    Recent Activity
-                  </Typography>
-                  
+            <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 }} style={{ height: '100%' }}>
+              <Box sx={{ ...glass, p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <SectionHeader label="Recent Activity" accentColor="#28a745" />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flex: 1 }}>
                   {[
-                    { text: 'New user registered', time: '2 min ago', color: '#ff6b6b', icon: People },
-                    { text: 'Quiz completed', time: '5 min ago', color: '#667eea', icon: Quiz },
-                    { text: 'New quiz created', time: '1 hour ago', color: '#28a745', icon: Add }
-                  ].map((activity, index) => (
-                    <motion.div 
-                      key={index}
-                      initial={{ opacity: 0, x: 20, scale: 0.8 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: 1.6 + index * 0.15, type: "spring", stiffness: 200 }}
-                      whileHover={{ scale: 1.02, x: 5 }}
-                    >
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        mb: 2, 
-                        p: 3, 
-                        borderRadius: 3,
-                        background: `linear-gradient(135deg, ${activity.color}15, ${activity.color}05)`,
-                        border: `2px solid ${activity.color}20`,
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&::before': {
-                          content: '""',
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: 4,
-                          background: activity.color
-                        }
-                      }}>
-                        <Box sx={{ 
-                          bgcolor: activity.color, 
-                          borderRadius: '50%', 
-                          p: 1, 
-                          mr: 2,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <activity.icon sx={{ color: 'white', fontSize: 20 }} />
-                        </Box>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{activity.text}</Typography>
-                          <Typography variant="body2" sx={{ color: '#666' }}>System notification</Typography>
-                        </Box>
-                        <Chip 
-                          label={activity.time} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: `${activity.color}20`, 
-                            color: activity.color,
-                            fontWeight: 'bold',
-                            borderRadius: 2
-                          }} 
-                        />
-                      </Box>
-                    </motion.div>
-                  ))}
-                </CardContent>
-              </Card>
+                    { text: 'New user registered', time: '2 min ago', color: '#ff6b6b', icon: People, delay: 0.38 },
+                    { text: 'Quiz completed by student', time: '5 min ago', color: '#667eea', icon: Quiz, delay: 0.44 },
+                    { text: 'New quiz created', time: '1 hr ago', color: '#28a745', icon: Add, delay: 0.50 },
+                    { text: 'Results exported', time: '3 hrs ago', color: '#FF9800', icon: Analytics, delay: 0.56 },
+                  ].map((a, i) => <ActivityRow key={i} {...a} />)}
+                </Box>
+
+                {/* mini divider + footer note */}
+                <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', my: 2 }} />
+                <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, textAlign: 'center' }}>
+                  Showing last 4 system events
+                </Typography>
+              </Box>
             </motion.div>
           </Grid>
         </Grid>
 
-        {/* Footer Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2, duration: 0.8 }}
-        >
-          <Box sx={{ 
-            mt: 6, 
-            p: 3, 
-            textAlign: 'center',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: 3,
-            backdropFilter: 'blur(10px)'
-          }}>
-            <Typography variant="h6" sx={{ color: 'white', mb: 1, fontWeight: 'bold' }}>
-              Quiz Management System
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-              Empowering education through interactive assessments
-            </Typography>
+        {/* ── Footer banner ── */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+          <Box sx={{ ...glass, mt: 4, px: 4, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 15 }}>Quiz Management System</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, mt: 0.3 }}>Empowering education through interactive assessments</Typography>
+            </Box>
+            <Chip label="v1.0 · Live" size="small" sx={{ background: 'rgba(40,167,69,0.2)', color: '#4caf50', border: '1px solid rgba(40,167,69,0.35)', fontWeight: 700, fontSize: 11 }} />
           </Box>
         </motion.div>
 
-      </Box>
+      </Container>
     </Box>
   );
 };

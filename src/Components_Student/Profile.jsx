@@ -1,242 +1,83 @@
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Card, CardContent, TextField, Button, AppBar, Toolbar, Avatar, Grid } from '@mui/material';
+import { Box, Typography, Container, Button, Avatar, Grid } from '@mui/material';
 import { ArrowBack, Person, ExitToApp, Email, CalendarToday, Phone } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../config/api';
 import { useCache } from '../hooks/useCache';
 
+const Orb = ({ style }) => (
+  <motion.div animate={{ y: [-20, 20, -20], x: [-10, 10, -10] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+    style={{ position: 'absolute', borderRadius: '50%', filter: 'blur(60px)', opacity: 0.3, pointerEvents: 'none', ...style }} />
+);
+
+const glass = { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 4 };
+
 const Profile = ({ user }) => {
   const navigate = useNavigate();
-  
-  const { data: profileData, loading } = useCache(
-    'user-profile',
-    async () => {
-      const response = await api.get('/api/users/profile');
-      return response.data;
-    }
-  );
+  const { data: profileData, loading } = useCache('user-profile', async () => (await api.get('/api/users/profile')).data);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminToken');
-    navigate('/');
-  };
+  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('adminToken'); navigate('/'); };
+
+  const fields = [
+    { icon: Person, color: '#667eea', label: 'Full Name', value: profileData?.name },
+    { icon: Email, color: '#764ba2', label: 'Email Address', value: profileData?.email },
+    { icon: Phone, color: '#FF9800', label: 'Phone Number', value: profileData?.phone_number || 'Not provided' },
+    { icon: CalendarToday, color: '#4CAF50', label: 'Member Since', value: profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString('en-GB') : null },
+  ];
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Floating Background Elements */}
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 0 }}>
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              y: [-30, -120, -30],
-              x: [-30, 30, -30],
-              rotate: [0, 360],
-            }}
-            transition={{
-              duration: 15 + i * 3,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              position: 'absolute',
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: 80 + i * 30,
-              height: 80 + i * 30,
-              background: `rgba(255,255,255,${0.03 + i * 0.02})`,
-              borderRadius: '50%',
-              filter: 'blur(2px)'
-            }}
-          />
-        ))}
+    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)', position: 'relative', overflow: 'hidden' }}>
+      <Orb style={{ width: 500, height: 500, background: '#667eea', top: '-15%', left: '-10%' }} />
+      <Orb style={{ width: 400, height: 400, background: '#764ba2', top: '40%', right: '-10%' }} />
+      <Orb style={{ width: 350, height: 350, background: '#f093fb', bottom: '-10%', left: '35%' }} />
+
+      {/* Navbar */}
+      <Box sx={{ ...glass, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', px: { xs: 2, md: 4 }, py: 1.5, position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate('/dashboard')} sx={{ color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 2, px: 2, '&:hover': { background: 'rgba(255,255,255,0.1)', color: 'white' } }}>Back</Button>
+        <Typography sx={{ fontWeight: 800, fontSize: 20, color: 'white', flexGrow: 1, textAlign: 'center' }}>My Profile</Typography>
+        <Button onClick={handleLogout} startIcon={<ExitToApp />} sx={{ color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 2, px: 2, '&:hover': { background: 'rgba(255,255,255,0.1)', color: 'white' } }}>Logout</Button>
       </Box>
 
-      <AppBar position="static" sx={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(20px)', zIndex: 10 }} elevation={0}>
-        <Toolbar>
-          <Button startIcon={<ArrowBack />} onClick={() => navigate('/dashboard')} sx={{ color: 'white', mr: 2 }}>
-            Back to Dashboard
-          </Button>
-          {/* <Typography variant="h6" sx={{ flexGrow: 1, color: 'white', fontWeight: 'bold' }}>My Profile</Typography> */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
-              <Person />
-            </Avatar>
-            <Typography sx={{ color: 'white' }}>{user?.name}</Typography>
-            <Button color="inherit" onClick={handleLogout} startIcon={<ExitToApp />}>Logout</Button>
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 5 } }}>
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          {/* Avatar section */}
+          <Box sx={{ ...glass, p: 4, textAlign: 'center', mb: 3, position: 'relative', overflow: 'hidden' }}>
+            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)' }} />
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}>
+              <Avatar sx={{ width: 100, height: 100, mx: 'auto', mb: 2, background: 'linear-gradient(135deg, #667eea, #764ba2)', border: '3px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(102,126,234,0.4)' }}>
+                <Person sx={{ fontSize: 52, color: 'white' }} />
+              </Avatar>
+            </motion.div>
+            <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 24 }}>{loading ? '...' : profileData?.name || 'User'}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, mt: 0.5 }}>Student</Typography>
           </Box>
-        </Toolbar>
-      </AppBar>
 
-      <Box sx={{ p: { xs: 1, sm: 2, md: 0 }, position: 'relative', zIndex: 1, minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8, y: 100 }} 
-          animate={{ opacity: 1, scale: 1, y: 0 }} 
-          transition={{ duration: 1, type: "spring", stiffness: 100 }}
-          style={{ width: '100%', maxWidth: '800px', margin: '0 10px' }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.95)', 
-            backdropFilter: 'blur(20px)', 
-            borderRadius: 4,
-            boxShadow: '0 30px 60px rgba(0,0,0,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            overflow: 'hidden'
-          }}>
-            <Box sx={{ 
-              background: 'linear-gradient(135deg, #667eea, #764ba2)', 
-              p: { xs: 3, sm: 4, md: 6 }, 
-              textAlign: 'center',
-              position: 'relative'
-            }}>
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.5, duration: 0.8, type: "spring" }}
-              >
-                <Avatar sx={{ 
-                  width: { xs: 80, sm: 100, md: 120 }, 
-                  height: { xs: 80, sm: 100, md: 120 }, 
-                  mx: 'auto', 
-                  mb: { xs: 2, md: 3 }, 
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  border: '4px solid rgba(255,255,255,0.3)',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-                }}>
-                  <Person sx={{ fontSize: { xs: 40, sm: 50, md: 60 } }} />
-                </Avatar>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
-              >
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'white', mb: 1, textShadow: '0 2px 10px rgba(0,0,0,0.3)', fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' } }}>
-                  {profileData?.name || 'User Profile'}
-                </Typography>
-                <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Student Dashboard
-                </Typography>
-              </motion.div>
+          {/* Info fields */}
+          <Box sx={{ ...glass, p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+              <Box sx={{ width: 4, height: 24, borderRadius: 2, background: 'linear-gradient(180deg, #667eea, #764ba2)' }} />
+              <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 16 }}>Account Details</Typography>
             </Box>
-            
-            <CardContent sx={{ p: { xs: 3, sm: 4, md: 6 } }}>
-              <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-                <Grid item xs={12} md={6}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1, duration: 0.6 }}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: { xs: 2, sm: 3 }, 
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #667eea15, #764ba205)',
-                      border: '2px solid #667eea20',
-                      mb: { xs: 2, md: 3 }
-                    }}>
-                      <Person sx={{ fontSize: { xs: 30, sm: 40 }, color: '#667eea', mr: { xs: 1.5, sm: 2 } }} />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Full Name</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          {loading ? 'Loading...' : profileData?.name || 'Not available'}
-                        </Typography>
+            <Grid container spacing={2}>
+              {fields.map((f, i) => (
+                <Grid item xs={12} sm={6} key={i}>
+                  <motion.div initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.1 }}>
+                    <Box sx={{ p: 2, borderRadius: 2, background: `${f.color}10`, border: `1px solid ${f.color}25`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: '50%', background: `${f.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <f.icon sx={{ color: f.color, fontSize: 18 }} />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, mb: 0.3 }}>{f.label}</Typography>
+                        <Typography sx={{ color: 'white', fontWeight: 600, fontSize: 13, wordBreak: 'break-all' }}>{loading ? '...' : f.value || 'Not available'}</Typography>
                       </Box>
                     </Box>
                   </motion.div>
                 </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: { xs: 2, sm: 3 }, 
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #764ba215, #667eea05)',
-                      border: '2px solid #764ba220',
-                      mb: { xs: 2, md: 3 }
-                    }}>
-                      <Email sx={{ fontSize: { xs: 30, sm: 40 }, color: '#764ba2', mr: { xs: 1.5, sm: 2 } }} />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Email Address</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '0.9rem', sm: '1.25rem' }, wordBreak: 'break-all' }}>
-                          {loading ? 'Loading...' : profileData?.email || 'Not available'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </motion.div>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.4, duration: 0.6 }}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: { xs: 2, sm: 3 }, 
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #FF980015, #FF570005)',
-                      border: '2px solid #FF980020',
-                      mb: { xs: 2, md: 3 }
-                    }}>
-                      <Phone sx={{ fontSize: { xs: 30, sm: 40 }, color: '#FF9800', mr: { xs: 1.5, sm: 2 } }} />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Phone Number</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          {loading ? 'Loading...' : profileData?.phone_number || 'Not provided'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </motion.div>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.4, duration: 0.6 }}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: { xs: 2, sm: 3 }, 
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #28a74515, #20c99705)',
-                      border: '2px solid #28a74520',
-                      textAlign: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <CalendarToday sx={{ fontSize: { xs: 30, sm: 40 }, color: '#28a745', mr: { xs: 1.5, sm: 2 } }} />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: '#666', mb: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Member Since</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          {loading ? 'Loading...' : (profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString('en-GB') : 'Not available')}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </motion.div>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+              ))}
+            </Grid>
+          </Box>
         </motion.div>
-      </Box>
+      </Container>
     </Box>
   );
 };

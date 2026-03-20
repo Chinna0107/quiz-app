@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Container, Paper, Button, Radio, RadioGroup, FormControlLabel, LinearProgress } from '@mui/material';
+import { Box, Typography, Container, Paper, Button, Radio, RadioGroup, FormControlLabel, LinearProgress, TextField } from '@mui/material';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 import api from '../config/api';
@@ -13,6 +13,7 @@ const TakeQuiz = () => {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   useEffect(() => {
     fetchQuiz();
@@ -37,6 +38,7 @@ const TakeQuiz = () => {
     try {
       const response = await api.get(`/api/users/quiz/${quizId}`);
       setQuiz(response.data);
+      if (response.data?.timer) setTimeLeft(response.data.timer * 60);
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load quiz' });
       navigate('/dashboard');
@@ -45,8 +47,21 @@ const TakeQuiz = () => {
     }
   };
 
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft === 0) { handleSubmit(); return; }
+    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   const handleAnswerChange = (value) => {
-    setAnswers({ ...answers, [currentQuestion]: parseInt(value) });
+    setAnswers({ ...answers, [currentQuestion]: value });
   };
 
   const handleNext = () => {
@@ -65,8 +80,15 @@ const TakeQuiz = () => {
     setSubmitting(true);
     try {
       const user = JSON.parse(localStorage.getItem('user'));
+      const normalizedAnswers = Object.fromEntries(
+        Object.entries(answers).map(([k, v]) =>
+          quiz.questions[k]?.type === 'fill'
+            ? [k, typeof v === 'string' ? v.trim().toLowerCase() : v]
+            : [k, v]
+        )
+      );
       const response = await api.post(`/api/users/quiz/${quizId}/submit`, { 
-        answers, 
+        answers: normalizedAnswers, 
         userId: user?.id 
       });
       
@@ -110,9 +132,23 @@ const TakeQuiz = () => {
             </Typography>
             
             <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
-                Question {currentQuestion + 1} of {quiz.questions.length}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Question {currentQuestion + 1} of {quiz.questions.length}
+                </Typography>
+                {timeLeft !== null && (
+                  <Box sx={{
+                    px: 2, py: 0.5, borderRadius: 2, fontWeight: 'bold', fontSize: '1.1rem',
+                    background: timeLeft < 60 ? 'rgba(255,0,0,0.1)' : 'rgba(102,126,234,0.1)',
+                    color: timeLeft < 60 ? '#d32f2f' : '#667eea',
+                    border: `2px solid ${timeLeft < 60 ? '#d32f2f' : '#667eea'}`,
+                    animation: timeLeft < 60 ? 'pulse 1s infinite' : 'none',
+                    '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.5 } }
+                  }}>
+                    ⏱ {formatTime(timeLeft)}
+                  </Box>
+                )}
+              </Box>
               <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
             </Box>
 
@@ -121,17 +157,28 @@ const TakeQuiz = () => {
                 {question.question_text}
               </Typography>
 
-              <RadioGroup value={answers[currentQuestion] || ''} onChange={(e) => handleAnswerChange(e.target.value)}>
-                {question.options.map((option, index) => (
-                  <FormControlLabel
-                    key={index}
-                    value={index}
-                    control={<Radio />}
-                    label={option.option_text}
-                    sx={{ mb: 1, '& .MuiFormControlLabel-label': { fontSize: '1.1rem' } }}
-                  />
-                ))}
-              </RadioGroup>
+              {question.type === 'fill' ? (
+                <TextField
+                  fullWidth
+                  label="Your Answer"
+                  value={answers[currentQuestion] || ''}
+                  onChange={(e) => handleAnswerChange(e.target.value)}
+                  placeholder="Type your answer here..."
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              ) : (
+                <RadioGroup value={answers[currentQuestion] ?? ''} onChange={(e) => handleAnswerChange(parseInt(e.target.value))}>
+                  {question.options.map((option, index) => (
+                    <FormControlLabel
+                      key={index}
+                      value={index}
+                      control={<Radio />}
+                      label={option.option_text}
+                      sx={{ mb: 1, '& .MuiFormControlLabel-label': { fontSize: '1.1rem' } }}
+                    />
+                  ))}
+                </RadioGroup>
+              )}
             </motion.div>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>

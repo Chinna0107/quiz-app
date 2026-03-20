@@ -11,6 +11,7 @@ import ResultsPage from './Components_Student/ResultsPage';
 import Profile from './Components_Student/Profile';
 import AdminDashboard from './Components_Admin/AdminDashboard';
 import CreateQuiz from './Components_Admin/CreateQuiz';
+import EditQuiz from './Components_Admin/EditQuiz';
 import QuizResults from './Components_Admin/QuizResults';
 import ManageUsers from './Components_Admin/ManageUsers';
 import AdminProfile from './Components_Admin/AdminProfile';
@@ -73,6 +74,7 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard user={user} /></ProtectedRoute>} />
           <Route path="/admin/profile" element={<ProtectedRoute requireAdmin><AdminProfile user={user} /></ProtectedRoute>} />
           <Route path="/admin/create-quiz" element={<ProtectedRoute requireAdmin><CreateQuiz /></ProtectedRoute>} />
+          <Route path="/admin/edit-quiz/:quizId" element={<ProtectedRoute requireAdmin><EditQuiz /></ProtectedRoute>} />
           <Route path="/admin/results" element={<ProtectedRoute requireAdmin><QuizResults user={user} /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requireAdmin><ManageUsers user={user} /></ProtectedRoute>} />
           <Route path="/admin/quiz-preview" element={<ProtectedRoute requireAdmin><QuizPreview user={user} /></ProtectedRoute>} />
