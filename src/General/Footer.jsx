@@ -17,7 +17,7 @@ const Footer = () => {
       <Container maxWidth="lg">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <Typography variant="body2">
-            © 2025 Quiz App. All rights reserved.
+            © 2026 Hemanth Kancharla's Quiz App. All rights reserved.
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Link onClick={() => navigate('/privacy')} color="inherit" underline="hover" sx={{ cursor: 'pointer' }}>

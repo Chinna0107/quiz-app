@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Box, Typography, Container, Button, Avatar, Grid, Chip } from '@mui/material';
 import { Quiz, Person, ExitToApp, TrendingUp, EmojiEvents, School, PlayArrow, CheckCircle, Star, Settings } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -17,6 +18,23 @@ const glass = { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(20px
 
 const Dashboard = ({ user }) => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedUser = user || JSON.parse(localStorage.getItem('user') || '{}');
+    if (!storedUser?.is_admin) {
+      const requestFS = () => {
+        document.documentElement.requestFullscreen?.().catch(() => {});
+        document.removeEventListener('click', requestFS);
+      };
+      if (!document.fullscreenElement) {
+        // Try immediately (works if coming from a user gesture like button click)
+        document.documentElement.requestFullscreen?.().catch(() => {
+          // If blocked, wait for next user interaction
+          document.addEventListener('click', requestFS, { once: true });
+        });
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');

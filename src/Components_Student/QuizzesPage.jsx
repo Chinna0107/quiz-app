@@ -136,6 +136,8 @@ const QuizzesPage = ({ user }) => {
               { icon: CheckCircle, color: '#4CAF50', primary: 'Answer Selection', secondary: 'Select only one answer per question.' },
               { icon: Warning, color: '#FF5722', primary: 'Submission', secondary: 'Once submitted, you cannot make changes.' },
               { icon: Star, color: '#9C27B0', primary: 'Best Practices', secondary: 'Stay focused and trust your knowledge!' },
+              {icon: Person, color: '#2196F3', primary: 'Support', secondary: 'Contact support if you encounter any issues.' },
+              {icon: Quiz, color: '#673AB7', primary: 'Enjoy!', secondary: 'Have fun and do your best!' },
             ].map((item, i) => (
               <ListItem key={i}>
                 <ListItemIcon><Box sx={{ width: 36, height: 36, borderRadius: '50%', background: `${item.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><item.icon sx={{ color: item.color, fontSize: 20 }} /></Box></ListItemIcon>
