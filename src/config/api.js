@@ -4,7 +4,7 @@ const getBaseURL = () => {
   if (import.meta.env.MODE === 'development') {
     return 'http://localhost:3000';
   }
-  return 'https://quiz-be-eight.vercel.app/';
+  return 'https://quiz-be-rouge.vercel.app/';
 };
 
 const api = axios.create({
