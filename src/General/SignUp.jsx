@@ -17,12 +17,15 @@ const SignUp = () => {
     confirmPassword: ''
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       Swal.fire({ icon: 'error', title: 'Password Mismatch', text: 'Passwords do not match' });
       return;
     }
+    setLoading(true);
     try {
       await api.post('/api/users/create-account', {
         name: formData.name,
@@ -38,6 +41,8 @@ const SignUp = () => {
       navigate('/');
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Account Creation Failed', text: error.response?.data?.error || 'Please try again' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,7 +101,9 @@ const SignUp = () => {
           <TextField name="mobile" label="Mobile Number" value={formData.mobile} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
           <TextField name="password" type="password" label="Password" value={formData.password} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
           <TextField name="confirmPassword" type="password" label="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
-          <Button type="submit" variant="contained" fullWidth sx={{ mt: 1, py: 1.5, borderRadius: 2, background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)', fontSize: '1.1rem', fontWeight: 'bold', '&:hover': { background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)' } }}>Create Account</Button>
+          <Button type="submit" variant="contained" fullWidth disabled={loading} sx={{ mt: 1, py: 1.5, borderRadius: 2, background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)', fontSize: '1.1rem', fontWeight: 'bold', '&:hover': { background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)' }, '&:disabled': { background: '#ccc' } }}>
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </Button>
           <Button variant="text" onClick={() => navigate('/')} sx={{ color: '#667eea', textTransform: 'none' }}>Already have an account? Sign In</Button>
         </Box>
       </Paper>
